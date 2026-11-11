@@ -69,3 +69,5 @@ button:disabled { cursor: wait; opacity: .6; }
   .request-card { padding: 18px; }
   .request-time { flex-basis: 100%; margin: 4px 0 0; }
 }
+.app-tools { margin-bottom: 18px; }
+.app-tools .muted { margin: 8px 0 0; }

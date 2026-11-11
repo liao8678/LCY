@@ -9,6 +9,7 @@
   const listMessage = document.querySelector('#list-message');
   const list = document.querySelector('#request-list');
   const count = document.querySelector('#request-count');
+  const connectionMessage = document.querySelector('#connection-message');
   let client;
   let submitting = false;
   let loading = false;
@@ -53,6 +54,10 @@
 
   async function loadRequests() {
     if (loading) return;
+    if (!navigator.onLine) {
+      message(listMessage, '目前離線，無法載入最新清單；請連線後按「重新整理」。');
+      return;
+    }
     loading = true;
     refreshButton.disabled = true;
     submitButton.disabled = true;
@@ -70,8 +75,8 @@
       message(listMessage, `清單載入失敗：${errorText(error)}${list.childElementCount ? ' 下方保留上次載入的紀錄。' : ''} 請按「重新整理」重試。`, 'error');
     } finally {
       loading = false;
-      refreshButton.disabled = submitting;
-      submitButton.disabled = submitting;
+      refreshButton.disabled = submitting || !navigator.onLine;
+      submitButton.disabled = submitting || !navigator.onLine;
       list.setAttribute('aria-busy', 'false');
     }
   }
@@ -79,6 +84,10 @@
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submitting || !client) return;
+    if (!navigator.onLine) {
+      message(formMessage, '目前離線，尚未送出；請恢復連線後手動送出。', 'error');
+      return;
+    }
     const values = new FormData(form);
     const payload = Object.fromEntries(['reporter_name', 'location', 'category', 'description', 'urgency']
       .map((key) => [key, String(values.get(key) || '').trim()]));
@@ -104,27 +113,55 @@
     } finally {
       submitting = false;
       fields.disabled = false;
-      submitButton.disabled = loading;
-      refreshButton.disabled = loading;
+      submitButton.disabled = loading || !navigator.onLine;
+      refreshButton.disabled = loading || !navigator.onLine;
       submitButton.textContent = '送出報修 ↗';
     }
   });
 
   refreshButton.addEventListener('click', () => loadRequests());
-  try {
-    const config = window.REPAIR_CONFIG;
-    if (!window.supabase || !config?.supabaseUrl || !config?.supabasePublishableKey) {
-      throw new Error('服務設定或 Supabase 程式載入失敗，請重新載入頁面。');
+  function initializeClient() {
+    try {
+      const config = window.REPAIR_CONFIG;
+      if (!window.supabase || !config?.supabaseUrl || !config?.supabasePublishableKey) {
+        throw new Error('服務設定或 Supabase 程式載入失敗，請重新載入頁面。');
+      }
+      client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+      fields.disabled = false;
+      message(formMessage, '');
+      loadRequests();
+    } catch (error) {
+      fields.disabled = navigator.onLine;
+      submitButton.disabled = true;
+      refreshButton.disabled = true;
+      list.setAttribute('aria-busy', 'false');
+      message(formMessage, errorText(error), 'error');
+      message(listMessage, '服務尚未連線，暫時無法載入報修紀錄。', 'error');
     }
-    client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-    });
-    loadRequests();
-  } catch (error) {
-    fields.disabled = true;
-    refreshButton.disabled = true;
-    list.setAttribute('aria-busy', 'false');
-    message(formMessage, errorText(error), 'error');
-    message(listMessage, '服務尚未連線，暫時無法載入報修紀錄。', 'error');
   }
+
+  function updateConnection() {
+    const offline = !navigator.onLine;
+    message(connectionMessage, offline
+      ? '目前離線：可查看表單，報修尚未送出。請保持此頁開啟，恢復連線後手動送出；關閉或重載頁面不會保留填寫內容。清單需連線才能更新。'
+      : '');
+    submitButton.disabled = offline || !client || submitting || loading;
+    refreshButton.disabled = offline || !client || submitting || loading;
+    if (offline) {
+      list.setAttribute('aria-busy', 'false');
+      message(listMessage, list.childElementCount
+        ? '目前離線，下方是本頁先前載入的紀錄，尚未更新。'
+        : '目前離線，無法載入最新清單；請連線後按「重新整理」。');
+    }
+  }
+  window.addEventListener('offline', updateConnection);
+  window.addEventListener('online', () => {
+    if (!client) initializeClient();
+    updateConnection();
+    if (client && !submitting) loadRequests();
+  });
+  initializeClient();
+  updateConnection();
 })();
