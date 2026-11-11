@@ -13,4 +13,4 @@ GitHub Pages 請在 Settings → Pages 選擇 Deploy from a branch、`main`、`/
 
 [報修欄位表與範例資料](文件/報修欄位表.xlsx)
 
-[報修系統操作說明](文件/報修系統操作說明.docx)
+[報修系統操作說明（約一頁半，含填表與最近報修實拍）](文件/報修系統操作說明.docx)
