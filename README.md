@@ -12,3 +12,5 @@
 GitHub Pages 請在 Settings → Pages 選擇 Deploy from a branch、`main`、`/ (root)`。預期網址為 https://liao8678.github.io/LCY/ （若設定自訂網域，則以 Pages 顯示的網址為準）。
 
 [報修欄位表與範例資料](文件/報修欄位表.xlsx)
+
+[報修系統操作說明](文件/報修系統操作說明.docx)
