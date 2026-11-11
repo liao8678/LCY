@@ -9,6 +9,10 @@
   const listMessage = document.querySelector('#list-message');
   const list = document.querySelector('#request-list');
   const count = document.querySelector('#request-count');
+  const filterButtons = document.querySelectorAll('[data-urgency-filter]');
+  const filterMessage = document.querySelector('#filter-message');
+  let requests = [];
+  let selectedUrgency = '';
   let client;
   let submitting = false;
   let loading = false;
@@ -51,6 +55,26 @@
     return card;
   }
 
+  function renderRequests() {
+    const filtered = selectedUrgency
+      ? requests.filter((request) => request.urgency === selectedUrgency)
+      : requests;
+    list.replaceChildren(...filtered.map(renderRequest));
+    count.textContent = String(filtered.length);
+    message(filterMessage, requests.length && !filtered.length
+      ? `最近 20 筆中沒有緊急程度為「${selectedUrgency}」的報修。` : '');
+  }
+
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      selectedUrgency = button.dataset.urgencyFilter;
+      filterButtons.forEach((filter) => {
+        filter.setAttribute('aria-pressed', String(filter === button));
+      });
+      renderRequests();
+    });
+  });
+
   async function loadRequests() {
     if (loading) return;
     loading = true;
@@ -63,11 +87,11 @@
         .select('id,reporter_name,location,category,description,urgency,status,created_at')
         .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(20);
       if (error) throw error;
-      list.replaceChildren(...data.map(renderRequest));
-      count.textContent = String(data.length);
+      requests = data;
+      renderRequests();
       message(listMessage, data.length ? '' : '目前還沒有報修紀錄，從上方登記第一筆吧。');
     } catch (error) {
-      message(listMessage, `清單載入失敗：${errorText(error)}${list.childElementCount ? ' 下方保留上次載入的紀錄。' : ''} 請按「重新整理」重試。`, 'error');
+      message(listMessage, `清單載入失敗：${errorText(error)}${requests.length ? ' 保留上次載入的紀錄，可切換篩選查看。' : ''} 請按「重新整理」重試。`, 'error');
     } finally {
       loading = false;
       refreshButton.disabled = submitting;

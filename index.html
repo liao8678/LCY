@@ -36,8 +36,15 @@
     </section>
     <section class="requests-section" aria-labelledby="list-title">
       <div class="section-heading list-heading"><div><p class="eyebrow">RECENT REQUESTS</p><h2 id="list-title">最近報修 <span class="count" id="request-count">—</span></h2></div><button id="refresh-button" class="secondary" type="button">↻ 重新整理</button></div>
-      <p class="list-caption">顯示最近 20 筆，依登記時間由新到舊排列。</p>
+      <p class="list-caption">篩選最近 20 筆，依登記時間由新到舊排列；數字為目前顯示筆數。</p>
+      <div class="urgency-filters" role="group" aria-label="依緊急程度篩選報修">
+        <button class="secondary" type="button" data-urgency-filter="" aria-pressed="true" aria-controls="request-list">全部</button>
+        <button class="secondary" type="button" data-urgency-filter="高" aria-pressed="false" aria-controls="request-list">高</button>
+        <button class="secondary" type="button" data-urgency-filter="中" aria-pressed="false" aria-controls="request-list">中</button>
+        <button class="secondary" type="button" data-urgency-filter="低" aria-pressed="false" aria-controls="request-list">低</button>
+      </div>
       <p id="list-message" class="message" role="status" aria-live="polite">正在載入報修紀錄…</p>
+      <p id="filter-message" class="message" role="status" aria-live="polite" hidden></p>
       <div id="request-list" class="request-list" aria-busy="true"></div>
     </section>
   </main>
