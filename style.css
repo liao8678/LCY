@@ -37,11 +37,14 @@ button:disabled { cursor: wait; opacity: .6; }
 .list-heading .eyebrow { font-size: 10px; margin-bottom: 8px; }
 .count { display: inline-block; border-radius: 20px; background: #e2ece4; font-size: 12px; padding: 4px 9px; vertical-align: middle; margin-left: 5px; }
 .list-caption { margin: 14px 0 20px; }
+.urgency-filters { display: flex; gap: 8px; margin-bottom: 20px; }
+.urgency-filters button { flex: 1; }
+.urgency-filters button[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: white; }
 .request-list { display: grid; gap: 14px; }
 .request-card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 20px; overflow-wrap: anywhere; }
 .request-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .badge { border-radius: 5px; background: #edf1ed; padding: 5px 9px; font-size: 12px; }
-.urgency-high { background: #fff0eb; color: #a84128; }
+.urgency-high { background: #fee2e2; color: #b91c1c; }
 .urgency-medium { background: #fbf3dc; color: #80611e; }
 .urgency-low { background: #e7f2ed; color: #28624d; }
 .request-time { color: var(--muted); font-size: 12px; margin-left: auto; }
