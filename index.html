@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#166154">
+  <title>報修登記｜問題回報中心</title>
+  <link rel="stylesheet" href="./style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script defer src="./config.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="site-header"><div class="brand"><span class="brand-icon" aria-hidden="true">＋</span> 問題回報中心<span class="brand-note">REPAIR DESK</span></div></header>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">讓每個問題，都有紀錄。</p>
+      <h1 id="page-title">報修登記</h1>
+      <p>設備故障、網路異常或環境問題，<br class="mobile-break">填寫表單，留下需要協助的事項。</p>
+    </section>
+    <section class="panel" aria-labelledby="form-title">
+      <div class="section-heading"><h2 id="form-title">新增報修</h2><span class="muted">所有欄位皆為必填</span></div>
+      <form id="repair-form">
+        <fieldset id="form-fields">
+          <div class="form-grid">
+            <label for="reporter-name">報修人<input id="reporter-name" name="reporter_name" required maxlength="100" autocomplete="name" placeholder="例如：王小明（示範姓名）"></label>
+            <label for="location">地點或部門<input id="location" name="location" required maxlength="200" placeholder="例如：示範辦公室 2 樓"></label>
+            <label for="category">類別<select id="category" name="category" required><option value="" disabled selected>請選擇問題類別</option><option>設備</option><option>網路</option><option>環境</option><option>其他</option></select></label>
+            <label for="urgency">緊急程度<select id="urgency" name="urgency" required><option>低</option><option selected>中</option><option>高</option></select></label>
+            <label class="full-width" for="description">問題說明<textarea id="description" name="description" required maxlength="2000" rows="5" placeholder="請描述發生的狀況、時間及影響，讓問題更容易被了解。"></textarea><span class="field-hint">最多 2,000 字；此為公開示範，請使用虛構姓名與地點。</span></label>
+          </div>
+          <div class="form-footer"><span class="muted">登記時間由系統自動記錄</span><button id="submit-button" type="submit">送出報修 <span aria-hidden="true">↗</span></button></div>
+        </fieldset>
+      </form>
+      <p id="form-message" class="message" role="status" aria-live="polite" hidden></p>
+    </section>
+    <section class="requests-section" aria-labelledby="list-title">
+      <div class="section-heading list-heading"><div><p class="eyebrow">RECENT REQUESTS</p><h2 id="list-title">最近報修 <span class="count" id="request-count">—</span></h2></div><button id="refresh-button" class="secondary" type="button">↻ 重新整理</button></div>
+      <p class="list-caption">顯示最近 20 筆，依登記時間由新到舊排列。</p>
+      <p id="list-message" class="message" role="status" aria-live="polite">正在載入報修紀錄…</p>
+      <div id="request-list" class="request-list" aria-busy="true"></div>
+    </section>
+  </main>
+  <footer class="site-footer">問題回報中心 <span aria-hidden="true">·</span> 每一筆登記，都是改善的開始。</footer>
+</body>
+</html>
