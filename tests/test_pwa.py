@@ -1,5 +1,6 @@
-"""Browser integration checks; virtual repair data, no production API writes."""
+"""Browser integration checks; virtual inspection data, no production API writes."""
 import functools
+import os
 import http.server
 from pathlib import Path
 import threading
@@ -20,8 +21,8 @@ threading.Thread(target=server.serve_forever, daemon=True).start()
 origin = f'http://localhost:{server.server_port}'
 with sync_playwright() as p:
     for prefix in ['/', '/LCY/']:
-        profile = tempfile.TemporaryDirectory(prefix='repair-pwa-')
-        context = p.chromium.launch_persistent_context(profile.name, executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'], viewport={'width': 390, 'height': 844})
+        profile = tempfile.TemporaryDirectory(prefix='inspection-pwa-')
+        context = p.chromium.launch_persistent_context(profile.name, executable_path=os.environ.get('CHROMIUM_PATH', '/usr/bin/chromium'), headless=True, args=['--no-sandbox'], viewport={'width': 390, 'height': 844})
         page = context.new_page()
         records = []
         posts = []
@@ -29,11 +30,11 @@ with sync_playwright() as p:
             if route.request.method == 'POST':
                 body = route.request.post_data_json
                 posts.append(body)
-                records.insert(0, dict(body, id='00000000-0000-0000-0000-000000000001', created_at='2026-11-11T01:00:00Z', status='待處理'))
+                records.insert(0, dict(body, id='00000000-0000-0000-0000-000000000001', created_at='2026-11-11T01:00:00Z', status='待審核'))
                 route.fulfill(status=201, body='', headers={'access-control-allow-origin':'*'})
             else:
                 route.fulfill(json=records, headers={'access-control-allow-origin':'*'})
-        context.route('**/rest/v1/repair_requests*', api)
+        context.route('**/rest/v1/inspection_requests*', api)
         page.on('pageerror', lambda error: print('page error:', error, flush=True))
         page.on('console', lambda msg: print('browser:', msg.type, msg.text[:150], flush=True) if msg.type == 'error' else None)
         page.on('requestfailed', lambda req: print('request failed:', req.url.split('?')[0], req.failure, flush=True))
@@ -54,30 +55,35 @@ with sync_playwright() as p:
         assert not details['errors'], details
         installability = cdp.send('Page.getInstallabilityErrors')
         assert not installability['installabilityErrors'], installability
-        page.locator('#reporter-name').fill('林小禾（虛構）')
-        page.locator('#location').fill('示範辦公室（虛構）')
-        page.locator('#category').select_option(label='設備')
-        page.locator('#description').fill('示範投影機無法開機。')
+        page.locator('#applicant-name').fill('林小禾（虛構）')
+        page.locator('#applicant-unit').fill('示範營造公司（虛構）')
+        page.locator('#project-name').fill('示範大樓新建工程')
+        page.locator('#site-location').fill('示範工地 3 樓樓板（虛構）')
+        page.locator('#support-type').select_option(label='系統式支撐架')
+        page.locator('#support-height').select_option(label='5 公尺以上未滿 7 公尺')
+        page.locator('#inspection-stage').select_option(label='混凝土澆置前檢查')
+        page.locator('#preferred-date').fill(page.locator('#preferred-date').get_attribute('min'))
+        page.locator('#description').fill('3 樓樓板支撐架組立完成，預定後天澆置混凝土。')
         offline(True)
         page.wait_for_function("document.querySelector('#submit-button').disabled")
         assert '目前離線' in page.locator('#connection-message').inner_text()
         offline(False)
         page.wait_for_function("!document.querySelector('#submit-button').disabled")
-        assert page.locator('#reporter-name').input_value() == '林小禾（虛構）'
+        assert page.locator('#applicant-name').input_value() == '林小禾（虛構）'
         assert not posts, 'Must not auto-submit on reconnect'
         page.locator('#submit-button').click()
         page.wait_for_function("document.querySelectorAll('.request-card').length === 1")
-        assert len(posts)==1 and set(posts[0])=={'reporter_name','location','category','description','urgency'}
+        assert len(posts)==1 and set(posts[0])=={'applicant_name','applicant_unit','project_name','site_location','support_type','support_height','inspection_stage','preferred_date','description'}
         assert '台北' in page.locator('.request-card').inner_text()
         offline(True)
         page.reload()
-        assert page.locator('h1').inner_text() == '報修登記'
+        assert page.locator('h1').inner_text() == '支撐架使用個案巡查申請'
         page.wait_for_function("document.querySelector('#submit-button').disabled")
         assert page.locator('.request-card').count()==0, 'API records must not persist across reloads'
         assert page.locator('#request-list').get_attribute('aria-busy') == 'false'
-        assert page.locator('#reporter-name').input_value()==''
+        assert page.locator('#applicant-name').input_value()==''
         urls=page.evaluate("caches.keys().then(async names=>(await Promise.all(names.map(async n=>(await (await caches.open(n)).keys()).map(r=>r.url)))).flat())")
-        assert not any('repair_requests' in u for u in urls)
+        assert not any('inspection_requests' in u for u in urls)
         assert any(prefix+'app.js' in u for u in urls)
         assert not page.evaluate('Object.keys(localStorage).length')
         if prefix=='/LCY/':

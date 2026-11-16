@@ -2,7 +2,7 @@
 
 // Bump the version whenever a cached file changes. Scope isolates GitHub Pages apps.
 const PREFIX = `repair-desk:${self.registration.scope}:`;
-const CACHE = `${PREFIX}v1`;
+const CACHE = `${PREFIX}v2`;
 const CORE = [
   './', './index.html', './style.css', './app.js', './pwa.js', './config.js',
   './vendor/supabase-2.119.0.js', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'
