@@ -1,0 +1,43 @@
+name: 更新威力彩開獎資料
+
+# 威力彩每週一、四晚上開獎。開獎後（台灣時間 22:23）抓取，隔天早上（09:23）再補抓一次。
+# 也可在 Actions 頁面按「Run workflow」手動執行。
+on:
+  schedule:
+    - cron: '23 14 * * 1,4'
+    - cron: '23 1 * * 2,5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lottery-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 下載最新開獎資料
+        run: python3 tools/fetch_power_lottery.py
+
+      - name: 有新資料時提交到 main
+        run: |
+          if git diff --quiet -- lottery/data.json; then
+            echo "沒有新的開獎資料，不需提交。"
+            exit 0
+          fi
+          latest=$(python3 -c "import json; d=json.load(open('lottery/data.json', encoding='utf-8'))['draws'][-1]; print(d['date'], d['period'])")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lottery/data.json
+          git commit -m "更新威力彩開獎資料（${latest}）"
+          git push
