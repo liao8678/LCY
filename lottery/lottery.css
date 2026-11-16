@@ -130,3 +130,14 @@ tr.total td { font-weight: 700; border-top: 2px solid var(--line); }
 .chart .row-label { fill: var(--text-primary); font-size: 13px; }
 #backtest-summary { margin-top: 12px; }
 .chart-title { margin: 14px 0 0; font-weight: 600; }
+.pick-list { display: grid; gap: 0; margin-top: 10px; }
+.pick-row { display: grid; grid-template-columns: minmax(0, 1.2fr) auto minmax(120px, auto); gap: 6px 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--grid); }
+.pick-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pick-row .balls { flex-wrap: wrap; gap: 4px; margin: 0; }
+.ball.sm.second.joined { margin-left: 0; }
+.pick-stat { color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+#picks-odds { margin-top: 12px; }
+@media (max-width: 760px) {
+  .pick-row { grid-template-columns: 1fr; }
+  .pick-stat { text-align: left; }
+}
