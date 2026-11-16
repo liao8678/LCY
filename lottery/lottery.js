@@ -125,12 +125,23 @@
   function table(container, headers, rows) {
     const t = el('table');
     const head = el('tr');
-    headers.forEach((h) => head.append(el('th', {}, h)));
+    headers.forEach((h) => head.append(typeof h === 'object' ? el('th', { class: h.className }, h.text) : el('th', {}, h)));
     const thead = el('thead');
     thead.append(head);
     t.append(thead);
     const body = el('tbody');
-    rows.forEach((r) => { const tr = el('tr'); r.forEach((c) => tr.append(el('td', {}, String(c)))); body.append(tr); });
+    rows.forEach((r) => {
+      const tr = el('tr');
+      if (r.rowClass) tr.className = r.rowClass;
+      r.forEach((c) => {
+        if (c && typeof c === 'object' && c.badge) {
+          const td = el('td');
+          td.append(el('span', { class: c.badge }, c.text));
+          tr.append(td);
+        } else tr.append(c && typeof c === 'object' ? el('td', { class: c.className || '' }, c.text) : el('td', {}, String(c)));
+      });
+      body.append(tr);
+    });
     t.append(body);
     container.replaceChildren(t);
   }
@@ -224,6 +235,8 @@
       s.odd.map((count, k) => [`${k} 奇 ${6 - k} 偶`, count, `${(count / n * 100).toFixed(1)}%`, oddExpected[k].toFixed(1)]));
 
     renderSums(draws);
+    renderPrizes(draws);
+    renderCompare(draws, s);
   }
 
   // ---- 號碼總和 ----
@@ -416,6 +429,97 @@
       if (event.key === 'ArrowRight') { event.preventDefault(); show(active + stepSize); }
       if (event.key === 'Escape') hide();
     };
+  }
+
+  // ---- 各獎項機率 ----
+  const ALL_COMBOS = binomial(38, 6) * 8;
+  // [名稱, 中獎條件, 第一區對中數, 是否需對中第二區]
+  const PRIZES = [
+    ['頭獎', '6 個＋第二區', 6, true], ['貳獎', '6 個', 6, false],
+    ['參獎', '5 個＋第二區', 5, true], ['肆獎', '5 個', 5, false],
+    ['伍獎', '4 個＋第二區', 4, true], ['陸獎', '4 個', 4, false],
+    ['柒獎', '3 個＋第二區', 3, true], ['捌獎', '2 個＋第二區', 2, true],
+    ['玖獎', '3 個', 3, false], ['普獎', '1 個＋第二區', 1, true],
+  ].map(([name, rule, k, withSecond]) => {
+    const ways = binomial(6, k) * binomial(32, 6 - k) * (withSecond ? 1 : 7);
+    return { name, rule, ways, p: ways / ALL_COMBOS };
+  });
+  const oneIn = (p) => `1／${p > 0.01 ? (1 / p).toFixed(1) : fmt(Math.round(1 / p))}`;
+  const pct = (v, digits = 1) => `${(v * 100).toFixed(digits)}%`;
+
+  function renderPrizes(draws) {
+    const withSales = draws.filter((d) => d.sales && Array.isArray(d.winners));
+    const rows = PRIZES.map((prize, i) => {
+      // 早期沒有玖獎，該期中獎注數為 0；只統計有設此獎的期數。
+      const eligible = withSales.filter((d) => i !== 8 || d.winners[8] > 0);
+      const expected = eligible.reduce((a, d) => a + (d.sales / 100) * prize.p, 0);
+      const actual = eligible.reduce((a, d) => a + (d.winners[i] || 0), 0);
+      return { ...prize, expected, actual, periods: eligible.length };
+    });
+    const totalP = PRIZES.reduce((a, d) => a + d.p, 0);
+    const fmtCount = (v) => (v >= 100 ? fmt(Math.round(v)) : v.toFixed(1));
+    const body = rows.map((d) => [d.name, d.rule, fmt(d.ways), oneIn(d.p), pct(d.p, Math.max(2, Math.ceil(-Math.log10(d.p * 100)) + 1)),
+      withSales.length ? fmtCount(d.expected) : '—', withSales.length ? fmt(d.actual) : '—',
+      withSales.length && d.expected ? `${(d.actual / d.expected).toFixed(2)} 倍` : '—']);
+    const sumExp = rows.reduce((a, d) => a + d.expected, 0);
+    const sumAct = rows.reduce((a, d) => a + d.actual, 0);
+    const total = ['任一獎項', '', fmt(PRIZES.reduce((a, d) => a + d.ways, 0)), oneIn(totalP), pct(totalP, 2),
+      withSales.length ? fmt(Math.round(sumExp)) : '—', withSales.length ? fmt(sumAct) : '—',
+      withSales.length ? `${(sumAct / sumExp).toFixed(2)} 倍` : '—'];
+    total.rowClass = 'total';
+    table($('#prize-table'), ['獎項', '中獎條件', '組合數', '機率', '百分比', '理論中獎注數', '實際中獎注數', '實際 ÷ 理論'], [...body, total]);
+    const tickets = withSales.reduce((a, d) => a + d.sales / 100, 0);
+    const ninthStart = withSales.find((d) => d.winners[8] > 0);
+    $('#prize-note').textContent = withSales.length
+      ? `統計範圍內共售出約 ${fmt(Math.round(tickets))} 注。${ninthStart && ninthStart !== withSales[0] ? `玖獎自 ${ninthStart.date} 起才設立，只計該日之後的期數。` : ''}長期加總後實際中獎注數與理論非常接近；單看某幾期則可能差很多，因為許多人選號並非隨機（偏好生日 1–31、連號、固定號碼），同一組號碼被很多人重複購買，中獎注數會忽多忽少。頭獎、貳獎每期期望值不到 1 注，波動更大。`
+      : '目前資料沒有銷售與中獎注數，請重新執行 tools/fetch_power_lottery.py 下載。';
+  }
+
+  // ---- 理論值與實際值對照 ----
+  function renderCompare(draws, s) {
+    const n = draws.length;
+    const C = binomial(38, 6);
+    const rows = [];
+    const verdict = (z) => (Math.abs(z) <= 2
+      ? { text: '在隨機誤差內', badge: 'verdict ok' }
+      : { text: '超出隨機誤差', badge: 'verdict off' });
+    const addShare = (name, p, hits, trials, note) => {
+      const share = hits / trials;
+      const z = (share - p) / Math.sqrt(p * (1 - p) / trials);
+      rows.push([name, pct(p), pct(share), `${share - p >= 0 ? '+' : ''}${((share - p) * 100).toFixed(1)} 個百分點`, verdict(z), { text: note, className: 'wrap' }]);
+    };
+    const addMean = (name, mu, sd, values, note, digits = 2) => {
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const z = (mean - mu) / (sd / Math.sqrt(values.length));
+      rows.push([name, mu.toFixed(digits), mean.toFixed(digits), `${mean - mu >= 0 ? '+' : ''}${(mean - mu).toFixed(digits)}`, verdict(z), { text: note, className: 'wrap' }]);
+    };
+    const addRange = (name, items, p, note) => {
+      const mu = n * p;
+      const sd = Math.sqrt(n * p * (1 - p));
+      const lo = Math.max(0, Math.round(mu - 2.6 * sd));
+      const hi = Math.round(mu + 2.6 * sd);
+      const counts = items.map((d) => d.count);
+      const min = Math.min(...counts);
+      const max = Math.max(...counts);
+      rows.push([name, `約 ${lo}–${hi} 次`, `${min}–${max} 次`, '—', verdict(min >= lo && max <= hi ? 0 : 3), { text: note, className: 'wrap' }]);
+    };
+
+    addRange('第一區各號碼出現次數', s.first, 6 / 38, '理論範圍取期望值 ± 2.6 個標準差，38 個號碼一起看時約 99% 會落在此範圍內。');
+    addRange('第二區各號碼出現次數', s.second, 1 / 8, '同上，8 個號碼一起看。');
+    const sums = draws.map(sumOf);
+    addMean('第一區號碼總和平均', THEORY_MEAN, THEORY_SD, sums, '6 個號碼平均各 19.5，相加為 117。', 1);
+    addShare('總和落在 92–142', theoryShare(92, 142), sums.filter((v) => v >= 92 && v <= 142).length, n, '理論平均 ± 1 個標準差。');
+    const odds = draws.map((d) => d.first.filter((x) => x % 2).length);
+    addMean('每期奇數個數平均', 3, Math.sqrt(6 * 0.5 * 0.5 * 32 / 37), odds, '1–38 奇偶各 19 個，平均一半是奇數。');
+    addShare('3 奇 3 偶的期數', binomial(19, 3) ** 2 / C, s.odd[3], n, '最常見的奇偶組合，但也只約三分之一。');
+    const hasRun = (d) => d.first.some((x, i) => i && x - d.first[i - 1] === 1);
+    addShare('至少有一組連號', 1 - binomial(33, 6) / C, draws.filter(hasRun).length, n, '例如 12、13 同時開出。很多人以為連號少見，其實超過一半的期數都有。');
+    addShare('6 個號碼都 ≤ 31', binomial(31, 6) / C, draws.filter((d) => d.first[5] <= 31).length, n, '也就是全部可用生日日期表示的組合。');
+    const prevShare = draws.slice(1).filter((d, i) => d.first.some((x) => draws[i].first.includes(x))).length;
+    addShare('與上一期至少重複 1 個號碼', 1 - binomial(32, 6) / C, prevShare, n - 1, '每期獨立開獎，重複號碼很常見。');
+    addShare('第二區與上一期相同', 1 / 8, draws.slice(1).filter((d, i) => d.second === draws[i].second).length, n - 1, '每期都是 8 選 1，與上期無關。');
+
+    table($('#compare-table'), ['項目', '理論值', '實際值', '差異', '判讀', { text: '說明', className: 'wrap' }], rows);
   }
 
   function renderStatic(data) {
