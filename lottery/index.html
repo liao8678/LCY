@@ -126,6 +126,23 @@
         <div class="table-wrap" id="compare-table"></div>
       </section>
 
+      <section class="card" aria-labelledby="backtest-title">
+        <h2 id="backtest-title">選號方法回測</h2>
+        <p class="muted small">模擬預測網站常見的選號方法：每一期只用「該期以前」的開獎資料選出 6 個號碼＋第二區，再對照該期實際開獎。測試期數依上方統計範圍，並需先有足夠的歷史資料。</p>
+        <div class="filters inline" role="group" aria-label="參考期數">
+          <span class="muted small">選號時參考前</span>
+          <button type="button" data-window="50" aria-pressed="false">50 期</button>
+          <button type="button" data-window="100" aria-pressed="true">100 期</button>
+          <button type="button" data-window="200" aria-pressed="false">200 期</button>
+        </div>
+        <p class="muted small" id="backtest-caption"></p>
+        <p class="small chart-title">每種方法「中任一獎項」的比例（依現行 10 個獎項規則計算）</p>
+        <div class="chart" id="chart-backtest"></div>
+        <p class="scroll-hint muted small">表格可左右滑動查看全部欄位 →</p>
+        <div class="table-wrap" id="backtest-table"></div>
+        <p class="notice small" id="backtest-summary"></p>
+      </section>
+
       <section class="card">
         <h2>最近 20 期開獎</h2>
         <div class="table-wrap" id="recent"></div>

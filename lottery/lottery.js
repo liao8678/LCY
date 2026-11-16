@@ -237,6 +237,7 @@
     renderSums(draws);
     renderPrizes(draws);
     renderCompare(draws, s);
+    renderBacktest(draws.length);
   }
 
   // ---- 號碼總和 ----
@@ -521,6 +522,160 @@
 
     table($('#compare-table'), ['項目', '理論值', '實際值', '差異', '判讀', { text: '說明', className: 'wrap' }], rows);
   }
+
+  // ---- 選號方法回測 ----
+  let backtestWindow = 100;
+  const MATCH_VAR = 6 * (6 / 38) * (32 / 38) * (32 / 37);
+  // 現行獎項：第一區對中 3 個以上，或對中 1 個以上且第二區也對中。
+  const isWin = (k, second) => k >= 3 || (k >= 1 && second);
+  const P_WIN = PRIZES.reduce((a, d) => a + d.p, 0);
+
+  function seededRandom(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const METHODS = [
+    { name: '熱門號', desc: `前 N 期出現最多的 6 個號碼` },
+    { name: '冷門號', desc: '前 N 期出現最少的 6 個號碼' },
+    { name: '最久未開', desc: '連續最多期沒開出的 6 個號碼' },
+    { name: '照抄上期', desc: '直接使用上一期的開獎號碼' },
+    { name: '隨機選號', desc: '電腦隨機選（固定亂數種子，結果可重現）' },
+  ];
+
+  function backtest(rangeCount, windowSize) {
+    const total = allDraws.length;
+    const startIndex = Math.max(windowSize, total - rangeCount);
+    const count = Array(39).fill(0);
+    const count2 = Array(9).fill(0);
+    const lastSeen = Array(39).fill(-1);
+    const lastSeen2 = Array(9).fill(-1);
+    const add = (d, sign) => { d.first.forEach((x) => { count[x] += sign; }); count2[d.second] += sign; };
+    for (let i = startIndex - windowSize; i < startIndex; i++) add(allDraws[i], 1);
+    for (let i = 0; i < startIndex; i++) {
+      allDraws[i].first.forEach((x) => { lastSeen[x] = i; });
+      lastSeen2[allDraws[i].second] = i;
+    }
+    const random = seededRandom(20080124);
+    const numbers = Array.from({ length: 38 }, (_, i) => i + 1);
+    const seconds = Array.from({ length: 8 }, (_, i) => i + 1);
+    const pickBy = (list, key, n) => [...list].sort((a, b) => key(a) - key(b) || a - b).slice(0, n);
+    const results = METHODS.map(() => ({ matches: 0, three: 0, second: 0, wins: 0 }));
+    for (let i = startIndex; i < total; i++) {
+      const prev = allDraws[i - 1];
+      const picks = [
+        [pickBy(numbers, (x) => -count[x], 6), pickBy(seconds, (x) => -count2[x], 1)[0]],
+        [pickBy(numbers, (x) => count[x], 6), pickBy(seconds, (x) => count2[x], 1)[0]],
+        [pickBy(numbers, (x) => lastSeen[x], 6), pickBy(seconds, (x) => lastSeen2[x], 1)[0]],
+        [prev.first, prev.second],
+        [(() => { const pool = [...numbers]; const out = []; for (let k = 0; k < 6; k++) out.push(pool.splice(Math.floor(random() * pool.length), 1)[0]); return out; })(),
+          1 + Math.floor(random() * 8)],
+      ];
+      const draw = allDraws[i];
+      picks.forEach(([first, second], m) => {
+        const k = first.filter((x) => draw.first.includes(x)).length;
+        const hitSecond = second === draw.second;
+        const res = results[m];
+        res.matches += k; res.three += k >= 3; res.second += hitSecond; res.wins += isWin(k, hitSecond);
+      });
+      add(draw, 1);
+      add(allDraws[i - windowSize], -1);
+      draw.first.forEach((x) => { lastSeen[x] = i; });
+      lastSeen2[draw.second] = i;
+    }
+    return { tested: Math.max(0, total - startIndex), startIndex, results };
+  }
+
+  function renderBacktest(rangeCount) {
+    const { tested, startIndex, results } = backtest(rangeCount, backtestWindow);
+    const caption = $('#backtest-caption');
+    if (tested < 20) {
+      caption.textContent = '測試期數太少，請選擇較大的統計範圍。';
+      ['#chart-backtest', '#backtest-table'].forEach((sel) => $(sel).replaceChildren());
+      $('#backtest-summary').hidden = true;
+      return;
+    }
+    $('#backtest-summary').hidden = false;
+    caption.textContent = `共測試 ${fmt(tested)} 期（${allDraws[startIndex].date} ～ ${allDraws[allDraws.length - 1].date}）。灰色帶為純隨機下約 95% 會落入的範圍（理論值 ± 2 個標準誤），點落在帶內代表與隨便選沒有差別。`;
+    const seWin = Math.sqrt(P_WIN * (1 - P_WIN) / tested);
+    const seMatch = Math.sqrt(MATCH_VAR / tested);
+    const rows = METHODS.map((m, i) => {
+      const r = results[i];
+      return { ...m, avg: r.matches / tested, three: r.three / tested, second: r.second / tested, win: r.wins / tested };
+    });
+    dotChart($('#chart-backtest'), rows, P_WIN, seWin);
+
+    const p3 = [3, 4, 5, 6].reduce((a, k) => a + binomial(6, k) * binomial(32, 6 - k), 0) / binomial(38, 6);
+    const verdict = (z) => (Math.abs(z) <= 2 ? { text: '與隨機無差別', badge: 'verdict ok' } : { text: '超出隨機誤差', badge: 'verdict off' });
+    const body = rows.map((d) => [d.name, { text: d.desc.replace('N', backtestWindow), className: 'wrap' }, d.avg.toFixed(3), pct(d.three, 2), pct(d.second), pct(d.win, 2),
+      verdict(Math.max(Math.abs((d.win - P_WIN) / seWin), Math.abs((d.avg - 36 / 38) / seMatch)))]);
+    const theory = ['理論值', { text: '任何選號方法都一樣', className: 'wrap' }, (36 / 38).toFixed(3), pct(p3, 2), '12.5%', pct(P_WIN, 2), '—'];
+    theory.rowClass = 'total';
+    table($('#backtest-table'), ['方法', { text: '選號方式', className: 'wrap' }, '第一區平均對中', '對中 3 個以上', '第二區命中', '中任一獎項', '判讀'], [...body, theory]);
+
+    const best = [...rows].sort((a, b) => b.win - a.win)[0];
+    const allOk = rows.every((d) => Math.abs(d.win - P_WIN) <= 2 * seWin && Math.abs(d.avg - 36 / 38) <= 2 * seMatch);
+    $('#backtest-summary').textContent = allOk
+      ? `結論：五種方法的結果都在隨機誤差範圍內。這次「${best.name}」中獎率最高（${pct(best.win, 2)}），但換個參考期數或統計範圍，排名就會改變——這正是隨機波動的特徵。預測網站的熱門號、冷門號、遺漏期數，都不會讓中獎機會變高。`
+      : `結論：有方法超出 2 個標準誤，但同時比較多種方法時，偶爾超出是預期中的巧合（約每 20 次比較就會出現 1 次）；換個參考期數或統計範圍通常就會消失。開獎是獨立隨機事件，任何選號方法的理論機率都相同。`;
+  }
+
+  function dotChart(container, rows, center, se) {
+    container.replaceChildren();
+    const width = Math.max(320, container.clientWidth || 640);
+    const rowH = 38;
+    const m = { top: 10, right: 16, bottom: 30, left: 84 };
+    const height = m.top + rows.length * rowH + m.bottom;
+    const lo = center - 2 * se;
+    const hi = center + 2 * se;
+    const values = rows.map((d) => d.win);
+    let min = Math.min(lo, ...values);
+    let max = Math.max(hi, ...values);
+    const padding = (max - min) * 0.15;
+    min -= padding; max += padding;
+    const w = width - m.left - m.right;
+    const x = (v) => m.left + ((v - min) / (max - min)) * w;
+    const svg = el('svg:svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': '各選號方法中任一獎項比例與隨機誤差範圍' });
+    const step = niceStep((max - min) / 4);
+    for (let v = Math.ceil(min / step) * step; v <= max; v += step) {
+      svg.append(el('svg:line', { class: 'grid', x1: x(v), x2: x(v), y1: m.top, y2: height - m.bottom }));
+      svg.append(el('svg:text', { x: x(v), y: height - 10, 'text-anchor': 'middle' }, `${(v * 100).toFixed(step < 0.001 ? 2 : 1)}%`));
+    }
+    svg.append(el('svg:rect', { class: 'band', x: x(lo), y: m.top, width: x(hi) - x(lo), height: rows.length * rowH }));
+    svg.append(el('svg:line', { class: 'ref', x1: x(center), x2: x(center), y1: m.top, y2: m.top + rows.length * rowH }));
+    rows.forEach((d, i) => {
+      const cy = m.top + i * rowH + rowH / 2;
+      svg.append(el('svg:text', { class: 'row-label', x: m.left - 10, y: cy + 4, 'text-anchor': 'end' }, d.name));
+      const dot = el('svg:circle', { class: 'dot', cx: x(d.win), cy, r: 6 });
+      const hit = el('svg:rect', { class: 'hit', x: m.left, y: cy - rowH / 2, width: w, height: rowH, tabindex: '0',
+        'aria-label': `${d.name}：中任一獎項 ${pct(d.win, 2)}，理論 ${pct(center, 2)}` });
+      const enter = (event) => {
+        dot.classList.add('active');
+        const box = dot.getBoundingClientRect();
+        showTip(`<b>${d.name}</b><br>中任一獎項 ${pct(d.win, 2)}（理論 ${pct(center, 2)}）<br>第一區平均對中 ${d.avg.toFixed(3)} 個<br>第二區命中 ${pct(d.second)}`,
+          event.clientX ?? box.left + box.width / 2, event.clientY ?? box.top);
+      };
+      const leave = () => { dot.classList.remove('active'); hideTip(); };
+      hit.addEventListener('pointermove', enter);
+      hit.addEventListener('pointerleave', leave);
+      hit.addEventListener('focus', () => enter({}));
+      hit.addEventListener('blur', leave);
+      svg.append(dot, hit);
+    });
+    container.append(svg);
+  }
+
+  document.querySelectorAll('[data-window]').forEach((button) => {
+    button.addEventListener('click', () => {
+      backtestWindow = Number(button.dataset.window);
+      document.querySelectorAll('[data-window]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+      if (allDraws.length) renderBacktest(current === 'all' ? allDraws.length : Number(current));
+    });
+  });
 
   function renderStatic(data) {
     const latest = allDraws[allDraws.length - 1];
