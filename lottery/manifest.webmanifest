@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "威力彩歷史開獎分析",
+  "short_name": "威力彩分析",
+  "description": "威力彩歷史開獎號碼統計、號碼總和與各獎項機率分析。離線時顯示上次下載的資料。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f1",
+  "theme_color": "#2a78d6",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

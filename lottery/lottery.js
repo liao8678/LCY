@@ -567,10 +567,13 @@
       $('#content').hidden = false;
       renderStatic(data);
       render(current);
+      window.dispatchEvent(new Event('lottery:loaded'));
     })
     .catch((error) => {
       const status = $('#status');
-      status.textContent = `開獎資料載入失敗：${error.message}。請重新整理頁面。`;
+      status.textContent = navigator.onLine
+        ? `開獎資料載入失敗：${error.message}。請重新整理頁面。`
+        : '目前離線，且尚未下載過開獎資料；請連線後再開啟一次，之後即可離線查看。';
       status.classList.add('error');
     });
 })();
