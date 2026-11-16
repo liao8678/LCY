@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 
 API = 'https://api.taiwanlottery.com/TLCAPIWeB/Lottery/SuperLotto638Result?period&month={month}&pageNum=1&pageSize=50'
+PRIZE_KEYS = ['Jackpot', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Normal']
 OUT = Path(__file__).resolve().parents[1] / 'lottery' / 'data.json'
 
 
@@ -42,9 +43,12 @@ def main():
             numbers = row['drawNumberSize']
             first, second = sorted(numbers[:6]), numbers[6]
             assert len(first) == 6 and all(1 <= n <= 38 for n in first) and 1 <= second <= 8, row
+            # 每注 100 元；winners 依序為頭獎、貳獎…玖獎、普獎的中獎注數。
+            winners = [(row.get(f'super638{key}Assign') or {}).get('winnerCount') for key in PRIZE_KEYS]
             draws[row['period']] = {
                 'period': row['period'], 'date': row['lotteryDate'][:10],
                 'first': first, 'second': second,
+                'sales': row.get('sellAmount'), 'winners': winners,
             }
         time.sleep(0.2)
     data = sorted(draws.values(), key=lambda d: (d['date'], d['period']))

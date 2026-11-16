@@ -111,3 +111,10 @@ code { font-size: 12px; }
 td.sum-cell { font-weight: 700; }
 @media (max-width: 900px) { .sum-tiles { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 480px) { .sum-tiles { grid-template-columns: repeat(2, 1fr); } }
+.verdict { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.verdict.ok::before { content: "✓"; }
+.verdict.off::before { content: "!"; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 11px; }
+td.wrap, th.wrap { white-space: normal; text-align: left; min-width: 180px; color: var(--text-secondary); }
+tr.total td { font-weight: 700; border-top: 2px solid var(--line); }
+.scroll-hint { display: none; margin: 8px 0 0; }
+@media (max-width: 760px) { .scroll-hint { display: block; } }
