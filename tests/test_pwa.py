@@ -21,7 +21,7 @@ threading.Thread(target=server.serve_forever, daemon=True).start()
 origin = f'http://localhost:{server.server_port}'
 with sync_playwright() as p:
     for prefix in ['/', '/LCY/']:
-        profile = tempfile.TemporaryDirectory(prefix='inspection-pwa-')
+        profile = tempfile.TemporaryDirectory(prefix='site-inspection-pwa-')
         context = p.chromium.launch_persistent_context(profile.name, executable_path=os.environ.get('CHROMIUM_PATH', '/usr/bin/chromium'), headless=True, args=['--no-sandbox'], viewport={'width': 390, 'height': 844})
         page = context.new_page()
         records = []

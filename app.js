@@ -146,7 +146,7 @@
   refreshButton.addEventListener('click', () => loadRequests());
   function initializeClient() {
     try {
-      const config = window.REPAIR_CONFIG;
+      const config = window.APP_CONFIG;
       if (!window.supabase || !config?.supabaseUrl || !config?.supabasePublishableKey) {
         throw new Error('服務設定或 Supabase 程式載入失敗，請重新載入頁面。');
       }
