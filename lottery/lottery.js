@@ -547,115 +547,47 @@
     { name: '隨機選號', desc: '電腦隨機選（固定亂數種子，結果可重現）' },
   ];
 
-  const NUMBERS = Array.from({ length: 38 }, (_, i) => i + 1);
-  const SECONDS = Array.from({ length: 8 }, (_, i) => i + 1);
-  const pickBy = (list, key, n) => [...list].sort((a, b) => key(a) - key(b) || a - b).slice(0, n);
-  const sample = (list, n, random) => {
-    const pool = [...list];
-    const out = [];
-    for (let k = 0; k < n; k++) out.push(pool.splice(Math.floor(random() * pool.length), 1)[0]);
-    return out;
-  };
-
-  // 依「到目前為止」的統計狀態，替每種方法選出第一區 n1 個、第二區 n2 個號碼。
-  function makePicks(state, prev, random, n1, n2) {
-    const { count, count2, lastSeen, lastSeen2 } = state;
-    const hotFirst = (x) => -count[x];
-    const hotSecond = (x) => -count2[x];
-    const repeatFirst = [...prev.first, ...pickBy(NUMBERS.filter((x) => !prev.first.includes(x)), hotFirst, Math.max(0, n1 - 6))].slice(0, n1);
-    const repeatSecond = [prev.second, ...pickBy(SECONDS.filter((x) => x !== prev.second), hotSecond, n2 - 1)];
-    return [
-      [pickBy(NUMBERS, hotFirst, n1), pickBy(SECONDS, hotSecond, n2)],
-      [pickBy(NUMBERS, (x) => count[x], n1), pickBy(SECONDS, (x) => count2[x], n2)],
-      [pickBy(NUMBERS, (x) => lastSeen[x], n1), pickBy(SECONDS, (x) => lastSeen2[x], n2)],
-      [repeatFirst, repeatSecond],
-      [sample(NUMBERS, n1, random), sample(SECONDS, n2, random)],
-    ];
-  }
-
-  function buildState(endIndex, windowSize) {
-    const state = { count: Array(39).fill(0), count2: Array(9).fill(0), lastSeen: Array(39).fill(-1), lastSeen2: Array(9).fill(-1) };
-    for (let i = 0; i < endIndex; i++) {
-      const d = allDraws[i];
-      d.first.forEach((x) => { state.lastSeen[x] = i; if (i >= endIndex - windowSize) state.count[x]++; });
-      state.lastSeen2[d.second] = i;
-      if (i >= endIndex - windowSize) state.count2[d.second]++;
-    }
-    return state;
-  }
-
-  function backtest(rangeCount, windowSize, n1 = 6, n2 = 1) {
+  function backtest(rangeCount, windowSize) {
     const total = allDraws.length;
     const startIndex = Math.max(windowSize, total - rangeCount);
-    const state = buildState(startIndex, windowSize);
-    const add = (d, sign) => { d.first.forEach((x) => { state.count[x] += sign; }); state.count2[d.second] += sign; };
+    const count = Array(39).fill(0);
+    const count2 = Array(9).fill(0);
+    const lastSeen = Array(39).fill(-1);
+    const lastSeen2 = Array(9).fill(-1);
+    const add = (d, sign) => { d.first.forEach((x) => { count[x] += sign; }); count2[d.second] += sign; };
+    for (let i = startIndex - windowSize; i < startIndex; i++) add(allDraws[i], 1);
+    for (let i = 0; i < startIndex; i++) {
+      allDraws[i].first.forEach((x) => { lastSeen[x] = i; });
+      lastSeen2[allDraws[i].second] = i;
+    }
     const random = seededRandom(20080124);
+    const numbers = Array.from({ length: 38 }, (_, i) => i + 1);
+    const seconds = Array.from({ length: 8 }, (_, i) => i + 1);
+    const pickBy = (list, key, n) => [...list].sort((a, b) => key(a) - key(b) || a - b).slice(0, n);
     const results = METHODS.map(() => ({ matches: 0, three: 0, second: 0, wins: 0 }));
     for (let i = startIndex; i < total; i++) {
+      const prev = allDraws[i - 1];
+      const picks = [
+        [pickBy(numbers, (x) => -count[x], 6), pickBy(seconds, (x) => -count2[x], 1)[0]],
+        [pickBy(numbers, (x) => count[x], 6), pickBy(seconds, (x) => count2[x], 1)[0]],
+        [pickBy(numbers, (x) => lastSeen[x], 6), pickBy(seconds, (x) => lastSeen2[x], 1)[0]],
+        [prev.first, prev.second],
+        [(() => { const pool = [...numbers]; const out = []; for (let k = 0; k < 6; k++) out.push(pool.splice(Math.floor(random() * pool.length), 1)[0]); return out; })(),
+          1 + Math.floor(random() * 8)],
+      ];
       const draw = allDraws[i];
-      makePicks(state, allDraws[i - 1], random, n1, n2).forEach(([first, second], m) => {
+      picks.forEach(([first, second], m) => {
         const k = first.filter((x) => draw.first.includes(x)).length;
-        const hitSecond = second.includes(draw.second);
+        const hitSecond = second === draw.second;
         const res = results[m];
-        // 包牌時最佳的一注對中 min(k, 6) 個；第二區任一個對中即可。
-        res.matches += k; res.three += k >= 3; res.second += hitSecond; res.wins += isWin(Math.min(k, 6), hitSecond);
+        res.matches += k; res.three += k >= 3; res.second += hitSecond; res.wins += isWin(k, hitSecond);
       });
       add(draw, 1);
       add(allDraws[i - windowSize], -1);
-      draw.first.forEach((x) => { state.lastSeen[x] = i; });
-      state.lastSeen2[draw.second] = i;
+      draw.first.forEach((x) => { lastSeen[x] = i; });
+      lastSeen2[draw.second] = i;
     }
     return { tested: Math.max(0, total - startIndex), startIndex, results };
-  }
-
-  // ---- 8 + 2 推薦號碼 ----
-  const WHEEL_BETS = binomial(8, 6) * 2;
-  const wheelTheory = (() => {
-    let three = 0, win = 0;
-    for (let k = 0; k <= 6; k++) {
-      const pk = binomial(8, k) * binomial(30, 6 - k) / binomial(38, 6);
-      if (k >= 3) three += pk;
-      win += pk * ((isWin(k, true) ? 2 / 8 : 0) + (isWin(k, false) ? 6 / 8 : 0));
-    }
-    return { avg: 6 * 8 / 38, three, second: 2 / 8, win };
-  })();
-
-  // 威力彩每週一、四開獎；遇國定假日可能調整，因此只標示「預計」。
-  function nextDrawDate(dateText) {
-    const date = new Date(`${dateText}T00:00:00Z`);
-    do date.setUTCDate(date.getUTCDate() + 1); while (![1, 4].includes(date.getUTCDay()));
-    return date.toISOString().slice(0, 10);
-  }
-
-  function renderPicks() {
-    const latest = allDraws[allDraws.length - 1];
-    const state = buildState(allDraws.length, backtestWindow);
-    const picks = makePicks(state, latest, seededRandom(latest.period), 8, 2);
-    const reasons = [
-      (f, s) => `前 ${backtestWindow} 期出現 ${f.map((x) => state.count[x]).sort((a, b) => a - b).filter((_, i, a) => i === 0 || i === a.length - 1).join('–')} 次；第二區 ${s.map((x) => `${x}（${state.count2[x]} 次）`).join('、')}`,
-      (f, s) => `前 ${backtestWindow} 期出現 ${f.map((x) => state.count[x]).sort((a, b) => a - b).filter((_, i, a) => i === 0 || i === a.length - 1).join('–')} 次；第二區 ${s.map((x) => `${x}（${state.count2[x]} 次）`).join('、')}`,
-      (f, s) => `已連續 ${f.map((x) => allDraws.length - 1 - state.lastSeen[x]).sort((a, b) => a - b).filter((_, i, a) => i === 0 || i === a.length - 1).join('–')} 期未開；第二區 ${s.map((x) => `${x}（${allDraws.length - 1 - state.lastSeen2[x]} 期）`).join('、')}`,
-      () => `上期 6 個號碼，再補前 ${backtestWindow} 期最熱門的 2 個`,
-      () => `以最新期別為亂數種子，同一期內結果固定`,
-    ];
-    const { tested, results } = backtest(allDraws.length, backtestWindow, 8, 2);
-    $('#picks-caption').textContent = `依據至 ${latest.date}（第 ${latest.period} 期）的開獎資料，供下一期（預計 ${nextDrawDate(latest.date)} 開獎）參考；開獎資料更新後自動重算。參考期數與上方「選號方法回測」相同（目前前 ${backtestWindow} 期）。`;
-    const list = $('#picks-list');
-    list.replaceChildren(...METHODS.map((m, i) => {
-      const [first, second] = picks[i];
-      const row = el('div', { class: 'pick-row' });
-      const head = el('div', { class: 'pick-head' });
-      head.append(el('strong', {}, m.name), el('span', { class: 'muted small' }, reasons[i](first, second)));
-      const sorted = [...first].sort((a, b) => a - b);
-      const ballsWrap = el('span', { class: 'balls' });
-      sorted.forEach((n) => ballsWrap.append(el('span', { class: 'ball sm', 'aria-label': `第一區 ${n}` }, pad(n))));
-      [...second].sort((a, b) => a - b).forEach((n, k) => ballsWrap.append(el('span', { class: `ball second sm${k ? ' joined' : ''}`, 'aria-label': `第二區 ${n}` }, String(n))));
-      const r = results[i];
-      const stat = el('span', { class: 'pick-stat small' }, tested ? `回測中任一獎項 ${pct(r.wins / tested, 2)}` : '');
-      row.append(head, ballsWrap, stat);
-      return row;
-    }));
-    $('#picks-odds').textContent = `8 + 2 全包需 ${WHEEL_BETS} 注（${fmt(WHEEL_BETS * 100)} 元）。任何一組 8 + 2 號碼的機率都相同：頭獎約 1／${fmt(Math.round(ALL_COMBOS / WHEEL_BETS))}，中任一獎項 ${pct(wheelTheory.win, 2)}（回測共 ${fmt(tested)} 期，各方法都在理論值附近）。多數中獎是 100–200 元的小獎，長期平均拿回的錢少於投入。本區塊僅為統計示範，不代表下一期較可能開出這些號碼；未滿 18 歲不得購買彩券。`;
   }
 
   function renderBacktest(rangeCount) {
@@ -741,7 +673,7 @@
     button.addEventListener('click', () => {
       backtestWindow = Number(button.dataset.window);
       document.querySelectorAll('[data-window]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-      if (allDraws.length) { renderBacktest(current === 'all' ? allDraws.length : Number(current)); renderPicks(); }
+      if (allDraws.length) renderBacktest(current === 'all' ? allDraws.length : Number(current));
     });
   });
 
@@ -790,7 +722,6 @@
       $('#content').hidden = false;
       renderStatic(data);
       render(current);
-      renderPicks();
       window.dispatchEvent(new Event('lottery:loaded'));
     })
     .catch((error) => {
