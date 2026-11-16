@@ -25,6 +25,6 @@ GitHub Pages 請在 Settings → Pages 選擇 Deploy from a branch、`main`、`/
 
 ## 威力彩歷史開獎分析
 
-獨立頁面 `lottery/`（上線後為 https://liao8678.github.io/LCY/lottery/ ），與工地巡查網頁無關、不使用 Supabase。統計第一區 01–38 與第二區 1–8 的出現次數、冷熱號與未開期數、每期奇數個數與號碼總和分布，並以卡方檢定檢查號碼是否均勻；可切換全部、最近 500／100／50 期。每期開獎是獨立隨機事件，統計結果不會提高中獎機率。
+獨立頁面 `lottery/`（上線後為 https://liao8678.github.io/LCY/lottery/ ），與工地巡查網頁無關、不使用 Supabase。統計第一區 01–38 與第二區 1–8 的出現次數、冷熱號與未開期數、每期奇數個數，以及「各期號碼總和分析」（平均、中位數、標準差、最小／最大、總和分布與 38 選 6 精確理論值比較、偏低／中間／偏高區間、含第二區的總和、各期總和走勢與移動平均），並以卡方檢定檢查號碼是否均勻；可切換全部、最近 500／100／50 期。每期開獎是獨立隨機事件，統計結果不會提高中獎機率。
 
 開獎資料存於 `lottery/data.json`，來源為台灣彩券官方網站。更新資料：`python3 tools/fetch_power_lottery.py`（需能連線 api.taiwanlottery.com）。

@@ -9,6 +9,7 @@
   --line: #dddcd6;
   --series-1: #2a78d6;
   --series-1-hover: #1d5fb0;
+  --series-2: #eb6834;
   --notice-bg: #fff6e0;
   --notice-ink: #6b4a00;
 }
@@ -24,6 +25,7 @@
     --line: #34342f;
     --series-1: #3987e5;
     --series-1-hover: #6aa6ef;
+    --series-2: #d95926;
     --notice-bg: #2e2612;
     --notice-ink: #f1d68f;
   }
@@ -89,3 +91,23 @@ code { font-size: 12px; }
 }
 .table-wrap .balls { flex-wrap: nowrap; gap: 4px; margin: 0; }
 @media (max-width: 760px) { .ball.sm { width: 24px; height: 24px; font-size: 11px; } th, td { padding: 6px 4px; } }
+.sum-section { margin: 28px 0 14px; }
+.section-title { font-size: 22px; margin: 0 0 4px; }
+.card-title { font-size: 16px; color: var(--text-primary); margin: 0 0 4px; }
+.sum-tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 14px 0; }
+.sum-tiles .tile { padding: 14px; }
+.sum-tiles .tile-value { font-size: 24px; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid; }
+.legend i.dash { border-top-style: dashed; border-top-width: 1.5px; }
+.chart .line-raw { fill: none; stroke: var(--series-1); stroke-width: 1; stroke-linejoin: round; opacity: .55; }
+.chart .line-ma { fill: none; stroke: var(--series-2); stroke-width: 2; stroke-linejoin: round; }
+.chart .crosshair { stroke: var(--text-muted); stroke-width: 1; }
+.chart .dot-raw { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+.chart .dot-ma { fill: var(--series-2); stroke: var(--surface-1); stroke-width: 2; }
+.chart .direct-label { font-size: 12px; fill: var(--text-primary); font-weight: 600; }
+#chart-trend:focus-visible { outline: 3px solid var(--series-1); outline-offset: 4px; border-radius: 4px; }
+td.sum-cell { font-weight: 700; }
+@media (max-width: 900px) { .sum-tiles { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px) { .sum-tiles { grid-template-columns: repeat(2, 1fr); } }

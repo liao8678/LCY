@@ -150,20 +150,17 @@
     const lastSeen = Array.from({ length: 39 }, () => -1);
     const lastSeenSecond = Array.from({ length: 9 }, () => -1);
     const odd = Array.from({ length: 7 }, () => 0);
-    const sums = new Map();
     draws.forEach((d, i) => {
       d.first.forEach((x) => { first[x]++; lastSeen[x] = i; });
       second[d.second]++; lastSeenSecond[d.second] = i;
       odd[d.first.filter((x) => x % 2).length]++;
-      const bucket = Math.floor(d.first.reduce((a, b) => a + b, 0) / 10) * 10;
-      sums.set(bucket, (sums.get(bucket) || 0) + 1);
     });
     const gap = (i) => (i < 0 ? n : n - 1 - i);
     return {
       n,
       first: first.slice(1).map((count, i) => ({ number: i + 1, count, gap: gap(lastSeen[i + 1]) })),
       second: second.slice(1).map((count, i) => ({ number: i + 1, count, gap: gap(lastSeenSecond[i + 1]) })),
-      odd, sums,
+      odd,
     };
   }
 
@@ -226,17 +223,199 @@
     table($('#table-odd'), ['奇偶', '實際期數', '比例', '理論期數'],
       s.odd.map((count, k) => [`${k} 奇 ${6 - k} 偶`, count, `${(count / n * 100).toFixed(1)}%`, oddExpected[k].toFixed(1)]));
 
-    const buckets = [];
-    for (let b = 20; b <= 210; b += 10) buckets.push(b);
-    const sumItems = buckets.map((b) => ({ b, count: s.sums.get(b) || 0 }))
-      .filter((d, i, arr) => d.count || (arr.slice(0, i).some((x) => x.count) && arr.slice(i).some((x) => x.count)));
-    columnChart($('#chart-sum'), sumItems.map((d) => ({
+    renderSums(draws);
+  }
+
+  // ---- 號碼總和 ----
+  const sumOf = (d) => d.first.reduce((a, b) => a + b, 0);
+  const TOTAL_COMBOS = binomial(38, 6);
+
+  // 38 選 6 所有組合的總和分布（動態規劃），ways[s] 為總和 s 的組合數。
+  const SUM_WAYS = (() => {
+    let dp = Array.from({ length: 7 }, () => new Float64Array(214));
+    dp[0][0] = 1;
+    for (let x = 1; x <= 38; x++) {
+      for (let k = 6; k >= 1; k--) {
+        for (let t = 213; t >= x; t--) dp[k][t] += dp[k - 1][t - x];
+      }
+    }
+    return dp[6];
+  })();
+  const theoryShare = (lo, hi) => {
+    let w = 0;
+    for (let t = Math.max(21, lo); t <= Math.min(213, hi); t++) w += SUM_WAYS[t];
+    return w / TOTAL_COMBOS;
+  };
+  const THEORY_MEAN = 117;
+  const THEORY_SD = Math.sqrt(6 * ((38 * 38 - 1) / 12) * (32 / 37));
+
+  function quantile(sorted, q) {
+    const pos = (sorted.length - 1) * q;
+    const lo = Math.floor(pos);
+    return sorted[lo] + (sorted[Math.ceil(pos)] - sorted[lo]) * (pos - lo);
+  }
+
+  function tile(label, value, sub) {
+    const t = el('div', { class: 'tile' });
+    t.append(el('span', { class: 'tile-label' }, label), el('span', { class: 'tile-value' }, value), el('span', { class: 'tile-sub' }, sub));
+    return t;
+  }
+
+  function renderSums(draws) {
+    const n = draws.length;
+    const sums = draws.map(sumOf);
+    const sorted = [...sums].sort((a, b) => a - b);
+    const mean = sums.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(sums.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, n - 1));
+    const minIndex = sums.indexOf(sorted[0]);
+    const maxIndex = sums.lastIndexOf(sorted[n - 1]);
+    const lo = Math.round(THEORY_MEAN - THEORY_SD);
+    const hi = Math.round(THEORY_MEAN + THEORY_SD);
+    const inMiddle = sums.filter((v) => v >= lo && v <= hi).length;
+    const latest = sums[n - 1];
+    const lowerShare = sorted.filter((v) => v < latest).length / n;
+
+    $('#sum-tiles').replaceChildren(
+      tile('平均總和', mean.toFixed(1), `理論 ${THEORY_MEAN.toFixed(1)}`),
+      tile('中位數', quantile(sorted, 0.5).toFixed(0), `中間 50%：${quantile(sorted, 0.25).toFixed(0)}–${quantile(sorted, 0.75).toFixed(0)}`),
+      tile('標準差', sd.toFixed(1), `理論 ${THEORY_SD.toFixed(1)}`),
+      tile('最小總和', String(sorted[0]), `${draws[minIndex].date}（${draws[minIndex].first.map(pad).join(' ')}）`),
+      tile('最大總和', String(sorted[n - 1]), `${draws[maxIndex].date}（${draws[maxIndex].first.map(pad).join(' ')}）`),
+      tile('最新一期總和', String(latest), `比統計範圍內 ${Math.round(lowerShare * 100)}% 的期數高`),
+    );
+
+    // 分布：每 5 為一組，附精確理論期數。
+    const width = 5;
+    const first = Math.floor(Math.min(sorted[0], 60) / width) * width;
+    const last = Math.floor(Math.max(sorted[n - 1], 175) / width) * width;
+    const bins = [];
+    for (let b = first; b <= last; b += width) {
+      const count = sums.filter((v) => v >= b && v < b + width).length;
+      bins.push({ b, count, expected: n * theoryShare(b, b + width - 1) });
+    }
+    columnChart($('#chart-sum'), bins.map((d) => ({
       label: String(d.b), value: d.count,
-      aria: `總和 ${d.b} 到 ${d.b + 9}，${d.count} 期`,
-      tip: `<b>總和 ${d.b}–${d.b + 9}</b><br>${fmt(d.count)} 期（${(d.count / n * 100).toFixed(1)}%）`,
-    })), { labelEvery: 2 });
-    table($('#table-sum'), ['總和區間', '期數', '比例'],
-      sumItems.map((d) => [`${d.b}–${d.b + 9}`, d.count, `${(d.count / n * 100).toFixed(1)}%`]));
+      aria: `總和 ${d.b} 到 ${d.b + width - 1}，實際 ${d.count} 期，理論 ${d.expected.toFixed(1)} 期`,
+      tip: `<b>總和 ${d.b}–${d.b + width - 1}</b><br>實際 ${fmt(d.count)} 期（${(d.count / n * 100).toFixed(1)}%）<br>理論 ${d.expected.toFixed(1)} 期（${(d.expected / n * 100).toFixed(1)}%）`,
+    })), { reference: bins.map((d) => d.expected), height: 240, labelEvery: window.innerWidth < 600 ? 4 : 2 });
+    table($('#table-sum'), ['總和區間', '實際期數', '實際比例', '理論比例'],
+      bins.map((d) => [`${d.b}–${d.b + width - 1}`, d.count, `${(d.count / n * 100).toFixed(1)}%`, `${(d.expected / n * 100).toFixed(1)}%`]));
+
+    const bands = [
+      ['偏低', `21–${lo - 1}`, 21, lo - 1],
+      ['中間', `${lo}–${hi}`, lo, hi],
+      ['偏高', `${hi + 1}–213`, hi + 1, 213],
+    ];
+    table($('#sum-bands'), ['區間', '總和', '實際期數', '實際比例', '理論比例'], bands.map(([name, label, a, b]) => {
+      const count = sums.filter((v) => v >= a && v <= b).length;
+      return [name, label, count, `${(count / n * 100).toFixed(1)}%`, `${(theoryShare(a, b) * 100).toFixed(1)}%`];
+    }));
+
+    const all = draws.map((d) => sumOf(d) + d.second);
+    const allSorted = [...all].sort((a, b) => a - b);
+    const allMean = all.reduce((a, b) => a + b, 0) / n;
+    table($('#sum-all'), ['項目', '數值'], [
+      ['平均（理論 121.5）', allMean.toFixed(1)],
+      ['中位數', quantile(allSorted, 0.5).toFixed(0)],
+      ['中間 50% 範圍', `${quantile(allSorted, 0.25).toFixed(0)}–${quantile(allSorted, 0.75).toFixed(0)}`],
+      ['最小／最大', `${allSorted[0]}／${allSorted[n - 1]}`],
+      ['最新一期', String(all[n - 1])],
+    ]);
+
+    // 走勢：每期總和與移動平均。
+    const windowSize = n >= 200 ? 20 : n >= 100 ? 10 : 5;
+    const ma = sums.map((_, i) => (i + 1 < windowSize ? null
+      : sums.slice(i + 1 - windowSize, i + 1).reduce((a, b) => a + b, 0) / windowSize));
+    $('#trend-legend').replaceChildren(
+      Object.assign(el('span'), { innerHTML: '<i style="color:var(--series-1)"></i>每期總和' }),
+      Object.assign(el('span'), { innerHTML: `<i style="color:var(--series-2)"></i>${windowSize} 期移動平均` }),
+      Object.assign(el('span'), { innerHTML: `<i class="dash" style="color:var(--text-secondary)"></i>理論平均 ${THEORY_MEAN}` }),
+    );
+    lineChart($('#chart-trend'), draws, sums, ma, windowSize);
+    const recent = draws.slice(-100).map((d, i) => [d.period, d.date, d.first.map(pad).join(' '), sums[n - Math.min(100, n) + i]]).reverse();
+    table($('#table-trend'), ['期別', '開獎日', '第一區', '總和'], recent);
+  }
+
+  function lineChart(container, draws, sums, ma, windowSize) {
+    container.replaceChildren();
+    const width = Math.max(320, container.clientWidth || 640);
+    const height = 260;
+    const m = { top: 16, right: 88, bottom: 26, left: 36 };
+    const w = width - m.left - m.right;
+    const h = height - m.top - m.bottom;
+    const n = sums.length;
+    const yMin = Math.min(20, Math.floor(Math.min(...sums) / 20) * 20);
+    const yMax = Math.max(220, Math.ceil(Math.max(...sums) / 20) * 20);
+    const x = (i) => m.left + (n === 1 ? w / 2 : (i / (n - 1)) * w);
+    const y = (v) => m.top + h - ((v - yMin) / (yMax - yMin)) * h;
+    const svg = el('svg:svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': `各期總和走勢，共 ${n} 期` });
+    for (let v = yMin; v <= yMax; v += 40) {
+      svg.append(el('svg:line', { class: 'grid', x1: m.left, x2: m.left + w, y1: y(v), y2: y(v) }));
+      svg.append(el('svg:text', { x: m.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, String(v)));
+    }
+    // X 軸：跨年時每隔固定年數標示，否則標示月份；間距固定。
+    const keyOf = (d) => (years.size >= 3 ? d.date.slice(0, 4) : d.date.slice(0, 7));
+    const years = new Set(draws.map((d) => d.date.slice(0, 4)));
+    const starts = [];
+    draws.forEach((d, i) => { if (!i || keyOf(d) !== keyOf(draws[i - 1])) starts.push(i); });
+    const minGap = years.size >= 3 ? 44 : 64;
+    const every = Math.max(1, Math.ceil(minGap / (w / Math.max(1, starts.length))));
+    starts.forEach((i, k) => {
+      if (k % every === 0 && x(i) <= m.left + w - 30) {
+        svg.append(el('svg:text', { x: x(i), y: height - 8, 'text-anchor': 'start' }, keyOf(draws[i])));
+      }
+    });
+    svg.append(el('svg:line', { class: 'ref', x1: m.left, x2: m.left + w, y1: y(THEORY_MEAN), y2: y(THEORY_MEAN) }));
+    svg.append(el('svg:polyline', { class: 'line-raw', points: sums.map((v, i) => `${x(i)},${y(v)}`).join(' ') }));
+    const maPts = ma.map((v, i) => (v === null ? null : `${x(i)},${y(v)}`)).filter(Boolean);
+    if (maPts.length) svg.append(el('svg:polyline', { class: 'line-ma', points: maPts.join(' ') }));
+    const lastMa = ma[n - 1];
+    if (lastMa !== null) svg.append(el('svg:text', { class: 'direct-label', x: m.left + w + 6, y: y(lastMa) + 4 }, `移動平均 ${lastMa.toFixed(0)}`));
+
+    const cross = el('svg:line', { class: 'crosshair', y1: m.top, y2: m.top + h, visibility: 'hidden' });
+    const dotRaw = el('svg:circle', { class: 'dot-raw', r: 4, visibility: 'hidden' });
+    const dotMa = el('svg:circle', { class: 'dot-ma', r: 4, visibility: 'hidden' });
+    const overlay = el('svg:rect', { x: m.left, y: m.top, width: w, height: h, fill: 'transparent' });
+    svg.append(cross, dotRaw, dotMa, overlay);
+    container.append(svg);
+
+    let active = n - 1;
+    const show = (i, clientX, clientY) => {
+      active = Math.max(0, Math.min(n - 1, i));
+      const d = draws[active];
+      cross.setAttribute('x1', x(active)); cross.setAttribute('x2', x(active));
+      dotRaw.setAttribute('cx', x(active)); dotRaw.setAttribute('cy', y(sums[active]));
+      cross.setAttribute('visibility', 'visible'); dotRaw.setAttribute('visibility', 'visible');
+      if (ma[active] !== null) {
+        dotMa.setAttribute('cx', x(active)); dotMa.setAttribute('cy', y(ma[active]));
+        dotMa.setAttribute('visibility', 'visible');
+      } else dotMa.setAttribute('visibility', 'hidden');
+      if (clientX === undefined) {
+        const box = svg.getBoundingClientRect();
+        const scale = box.width / width;
+        clientX = box.left + x(active) * scale;
+        clientY = box.top + y(sums[active]) * scale;
+      }
+      showTip(`<b>第 ${d.period} 期</b>　${d.date}<br>${d.first.map(pad).join(' ')}<br>總和 <b>${sums[active]}</b>${ma[active] !== null ? `<br>${windowSize} 期移動平均 ${ma[active].toFixed(1)}` : ''}`, clientX, clientY);
+    };
+    const hide = () => {
+      [cross, dotRaw, dotMa].forEach((node) => node.setAttribute('visibility', 'hidden'));
+      hideTip();
+    };
+    overlay.addEventListener('pointermove', (event) => {
+      const box = svg.getBoundingClientRect();
+      const px = (event.clientX - box.left) * (width / box.width);
+      show(Math.round(((px - m.left) / w) * (n - 1)), event.clientX, event.clientY);
+    });
+    overlay.addEventListener('pointerleave', hide);
+    container.onfocus = () => show(active);
+    container.onblur = hide;
+    container.onkeydown = (event) => {
+      const stepSize = event.shiftKey ? 10 : 1;
+      if (event.key === 'ArrowLeft') { event.preventDefault(); show(active - stepSize); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); show(active + stepSize); }
+      if (event.key === 'Escape') hide();
+    };
   }
 
   function renderStatic(data) {
@@ -248,7 +427,7 @@
 
     const t = el('table');
     const head = el('tr');
-    ['期別', '開獎日', '第一區（由小到大）＋第二區'].forEach((h) => head.append(el('th', {}, h)));
+    ['期別', '開獎日', '第一區（由小到大）＋第二區', '第一區總和'].forEach((h) => head.append(el('th', {}, h)));
     const thead = el('thead');
     thead.append(head);
     t.append(thead);
@@ -257,7 +436,7 @@
       const tr = el('tr');
       const cell = el('td');
       cell.append(balls(d.first, d.second, true));
-      tr.append(el('td', {}, String(d.period)), el('td', {}, d.date), cell);
+      tr.append(el('td', {}, String(d.period)), el('td', {}, d.date), cell, el('td', { class: 'sum-cell' }, String(sumOf(d))));
       body.append(tr);
     });
     t.append(body);
