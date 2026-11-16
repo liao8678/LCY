@@ -8,8 +8,8 @@
   <link rel="icon" type="image/png" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="工地巡查">
-  <title>工地巡查紀錄</title>
+  <meta name="apple-mobile-web-app-title" content="報修登記">
+  <title>報修登記｜問題回報中心</title>
   <link rel="stylesheet" href="./style.css">
   <script defer src="./vendor/supabase-2.119.0.js"></script>
   <script defer src="./config.js"></script>
@@ -17,40 +17,38 @@
   <script defer src="./pwa.js"></script>
 </head>
 <body>
-  <header class="site-header"><div class="brand"><span class="brand-icon" aria-hidden="true">＋</span> 工地安全巡查<span class="brand-note">SITE INSPECTION</span></div></header>
+  <header class="site-header"><div class="brand"><span class="brand-icon" aria-hidden="true">＋</span> 問題回報中心<span class="brand-note">REPAIR DESK</span></div></header>
   <main>
     <section class="intro" aria-labelledby="page-title">
-      <p class="eyebrow">每天巡一圈，風險少一點。</p>
-      <h1 id="page-title">工地巡查紀錄</h1>
-      <p>巡查支撐架、施工架、墜落防護、電氣與機具後，<br class="mobile-break">登錄巡查結果與缺失，留下完整紀錄。</p>
+      <p class="eyebrow">讓每個問題，都有紀錄。</p>
+      <h1 id="page-title">報修登記</h1>
+      <p>設備故障、網路異常或環境問題，<br class="mobile-break">填寫表單，留下需要協助的事項。</p>
     </section>
-    <div class="app-tools"><button id="install-button" class="secondary" type="button" hidden>安裝工地巡查</button><p id="install-help" class="muted">可透過瀏覽器選單安裝；iPhone／iPad 請在 Safari 分享選單選「加入主畫面」。</p></div>
+    <div class="app-tools"><button id="install-button" class="secondary" type="button" hidden>安裝報修系統</button><p id="install-help" class="muted">可透過瀏覽器選單安裝；iPhone／iPad 請在 Safari 分享選單選「加入主畫面」。</p></div>
     <p id="connection-message" class="message" role="status" aria-live="polite" hidden></p>
     <section class="panel" aria-labelledby="form-title">
-      <div class="section-heading"><h2 id="form-title">新增巡查紀錄</h2><span class="muted">所有欄位皆為必填</span></div>
-      <form id="inspection-form">
+      <div class="section-heading"><h2 id="form-title">新增報修</h2><span class="muted">所有欄位皆為必填</span></div>
+      <form id="repair-form">
         <fieldset id="form-fields">
           <div class="form-grid">
-            <label for="inspector-name">巡查人員<input id="inspector-name" name="inspector_name" required maxlength="100" autocomplete="name" placeholder="例如：王小明（示範姓名）"></label>
-            <label for="inspection-date">巡查日期<input id="inspection-date" name="inspection_date" type="date" required></label>
-            <label for="project-name">工程名稱<input id="project-name" name="project_name" required maxlength="200" placeholder="例如：示範大樓新建工程"></label>
-            <label for="inspection-area">巡查區域<input id="inspection-area" name="inspection_area" required maxlength="200" placeholder="例如：示範工地 3 樓樓板"></label>
-            <label for="inspection-item">巡查項目<select id="inspection-item" name="inspection_item" required><option value="" disabled selected>請選擇巡查項目</option><option>支撐架</option><option>施工架</option><option>開口及墜落防護</option><option>電氣設備</option><option>機具設備</option><option>環境整潔</option><option>其他</option></select></label>
-            <label for="result">巡查結果<select id="result" name="result" required><option value="" disabled selected>請選擇巡查結果</option><option>合格</option><option>需改善</option><option>立即停工</option></select></label>
-            <label class="full-width" for="findings">巡查說明<textarea id="findings" name="findings" required maxlength="2000" rows="5" placeholder="請記錄巡查情形；如有缺失，請說明缺失內容、位置及改善建議。"></textarea><span class="field-hint">最多 2,000 字；此為公開示範，請使用虛構姓名與地點，勿填電話等個人資料。</span></label>
+            <label for="reporter-name">報修人<input id="reporter-name" name="reporter_name" required maxlength="100" autocomplete="name" placeholder="例如：王小明（示範姓名）"></label>
+            <label for="location">地點或部門<input id="location" name="location" required maxlength="200" placeholder="例如：示範辦公室 2 樓"></label>
+            <label for="category">類別<select id="category" name="category" required><option value="" disabled selected>請選擇問題類別</option><option>設備</option><option>網路</option><option>環境</option><option>其他</option></select></label>
+            <label for="urgency">緊急程度<select id="urgency" name="urgency" required><option>低</option><option selected>中</option><option>高</option></select></label>
+            <label class="full-width" for="description">問題說明<textarea id="description" name="description" required maxlength="2000" rows="5" placeholder="請描述發生的狀況、時間及影響，讓問題更容易被了解。"></textarea><span class="field-hint">最多 2,000 字；此為公開示範，請使用虛構姓名與地點。</span></label>
           </div>
-          <div class="form-footer"><span class="muted">登錄時間由系統自動記錄</span><button id="submit-button" type="submit">送出紀錄 <span aria-hidden="true">↗</span></button></div>
+          <div class="form-footer"><span class="muted">登記時間由系統自動記錄</span><button id="submit-button" type="submit">送出報修 <span aria-hidden="true">↗</span></button></div>
         </fieldset>
       </form>
       <p id="form-message" class="message" role="status" aria-live="polite" hidden></p>
     </section>
     <section class="requests-section" aria-labelledby="list-title">
-      <div class="section-heading list-heading"><div><p class="eyebrow">RECENT INSPECTIONS</p><h2 id="list-title">最近巡查 <span class="count" id="request-count">—</span></h2></div><button id="refresh-button" class="secondary" type="button">↻ 重新整理</button></div>
-      <p class="list-caption">顯示最近 20 筆，依登錄時間由新到舊排列。</p>
-      <p id="list-message" class="message" role="status" aria-live="polite">正在載入巡查紀錄…</p>
+      <div class="section-heading list-heading"><div><p class="eyebrow">RECENT REQUESTS</p><h2 id="list-title">最近報修 <span class="count" id="request-count">—</span></h2></div><button id="refresh-button" class="secondary" type="button">↻ 重新整理</button></div>
+      <p class="list-caption">顯示最近 20 筆，依登記時間由新到舊排列。</p>
+      <p id="list-message" class="message" role="status" aria-live="polite">正在載入報修紀錄…</p>
       <div id="request-list" class="request-list" aria-busy="true"></div>
     </section>
   </main>
-  <footer class="site-footer">工地安全巡查 <span aria-hidden="true">·</span> 每一筆紀錄，都是工地安全的保障。</footer>
+  <footer class="site-footer">問題回報中心 <span aria-hidden="true">·</span> 每一筆登記，都是改善的開始。</footer>
 </body>
 </html>

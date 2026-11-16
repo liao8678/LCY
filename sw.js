@@ -1,10 +1,8 @@
 'use strict';
 
 // Bump the version whenever a cached file changes. Scope isolates GitHub Pages apps.
-const PREFIX = `site-inspection:${self.registration.scope}:`;
-// 舊版報修系統的快取名稱，啟用時一併清除。
-const LEGACY_PREFIX = `repair-desk:${self.registration.scope}:`;
-const CACHE = `${PREFIX}v3`;
+const PREFIX = `repair-desk:${self.registration.scope}:`;
+const CACHE = `${PREFIX}v1`;
 const CORE = [
   './', './index.html', './style.css', './app.js', './pwa.js', './config.js',
   './vendor/supabase-2.119.0.js', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'
@@ -21,7 +19,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     for (const name of await caches.keys()) {
-      if ((name.startsWith(PREFIX) && name !== CACHE) || name.startsWith(LEGACY_PREFIX)) await caches.delete(name);
+      if (name.startsWith(PREFIX) && name !== CACHE) await caches.delete(name);
     }
     await self.clients.claim();
   })());

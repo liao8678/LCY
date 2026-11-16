@@ -45,8 +45,7 @@ button:disabled { cursor: wait; opacity: .6; }
 .urgency-medium { background: #fbf3dc; color: #80611e; }
 .urgency-low { background: #e7f2ed; color: #28624d; }
 .request-time { color: var(--muted); font-size: 12px; margin-left: auto; }
-.request-title { font-size: 16px; font-weight: 700; margin: 16px 0 0; line-height: 1.6; }
-.request-description { white-space: pre-wrap; font-size: 15px; line-height: 1.75; margin: 8px 0 12px; }
+.request-description { white-space: pre-wrap; font-size: 16px; line-height: 1.75; margin: 16px 0 12px; }
 .request-meta { color: var(--muted); font-size: 13px; margin: 0; line-height: 1.7; }
 .message { padding: 16px; border-radius: 8px; background: #eaf0eb; color: #355d4a; line-height: 1.7; font-size: 14px; overflow-wrap: anywhere; }
 .message.error { background: #fff0ed; color: #9b3826; }
