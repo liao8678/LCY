@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "問題回報中心｜報修登記",
-  "short_name": "報修登記",
-  "description": "登記報修問題與查看最近報修紀錄。送出與清單更新需要網路連線。",
+  "name": "工地巡查紀錄",
+  "short_name": "工地巡查",
+  "description": "登錄工地巡查結果並查看最近巡查紀錄。送出與清單更新需要網路連線。",
   "lang": "zh-Hant",
   "start_url": "./index.html",
   "scope": "./",

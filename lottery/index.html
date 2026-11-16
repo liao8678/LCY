@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>威力彩歷史開獎分析</title>
+  <link rel="stylesheet" href="./lottery.css">
+  <script defer src="./lottery.js"></script>
+</head>
+<body class="viz-root">
+  <header class="top">
+    <div class="wrap top-inner"><strong>威力彩歷史開獎分析</strong><span class="muted small">POWER LOTTERY STATS</span></div>
+  </header>
+  <main class="wrap">
+    <section class="intro">
+      <h1>威力彩號碼統計</h1>
+      <p class="muted">依台灣彩券官方歷史開獎號碼統計各號碼的出現次數、未開期數與組合分布。</p>
+      <p class="notice"><strong>請注意：</strong>每期開獎都是獨立的隨機事件，過去出現多或少，不會改變下一期任何號碼的機率。頭獎機率固定為 1／22,085,448。本頁僅供統計參考，不構成投注建議；未滿 18 歲不得購買彩券。</p>
+    </section>
+
+    <p id="status" class="status" role="status">正在載入開獎資料…</p>
+
+    <div id="content" hidden>
+      <div class="filters" role="group" aria-label="統計範圍">
+        <span class="muted small">統計範圍</span>
+        <button type="button" data-range="all" aria-pressed="true">全部</button>
+        <button type="button" data-range="500" aria-pressed="false">最近 500 期</button>
+        <button type="button" data-range="100" aria-pressed="false">最近 100 期</button>
+        <button type="button" data-range="50" aria-pressed="false">最近 50 期</button>
+      </div>
+
+      <section class="tiles" aria-label="摘要">
+        <div class="tile"><span class="tile-label">統計期數</span><span class="tile-value" id="tile-count">—</span><span class="tile-sub" id="tile-range"></span></div>
+        <div class="tile tile-wide"><span class="tile-label">最新一期 <span id="latest-period"></span></span><span class="balls" id="latest-balls"></span><span class="tile-sub" id="latest-date"></span></div>
+        <div class="tile"><span class="tile-label">均勻度檢定（第一區）</span><span class="tile-value" id="tile-chi">—</span><span class="tile-sub" id="tile-chi-sub"></span></div>
+      </section>
+
+      <section class="card">
+        <h2>第一區（01–38）出現次數</h2>
+        <p class="muted small" id="first-caption"></p>
+        <div class="chart" id="chart-first"></div>
+        <details><summary>以表格檢視</summary><div class="table-wrap" id="table-first"></div></details>
+      </section>
+
+      <div class="two-col">
+        <section class="card">
+          <h2>第二區（1–8）出現次數</h2>
+          <p class="muted small" id="second-caption"></p>
+          <div class="chart" id="chart-second"></div>
+          <details><summary>以表格檢視</summary><div class="table-wrap" id="table-second"></div></details>
+        </section>
+        <section class="card">
+          <h2>冷熱號與遺漏</h2>
+          <p class="muted small">第一區；「未開期數」為距今連續幾期沒有開出。</p>
+          <div class="hotcold">
+            <div><h3>出現最多</h3><ol id="hot-list"></ol></div>
+            <div><h3>出現最少</h3><ol id="cold-list"></ol></div>
+            <div><h3>最久未開</h3><ol id="gap-list"></ol></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="two-col">
+        <section class="card">
+          <h2>每期奇數個數</h2>
+          <p class="muted small">第一區 6 個號碼中有幾個奇數；虛線為純隨機時的理論期數。</p>
+          <div class="chart" id="chart-odd"></div>
+          <details><summary>以表格檢視</summary><div class="table-wrap" id="table-odd"></div></details>
+        </section>
+        <section class="card">
+          <h2>第一區號碼總和分布</h2>
+          <p class="muted small">6 個號碼加總，每 10 為一組。</p>
+          <div class="chart" id="chart-sum"></div>
+          <details><summary>以表格檢視</summary><div class="table-wrap" id="table-sum"></div></details>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>最近 20 期開獎</h2>
+        <div class="table-wrap" id="recent"></div>
+      </section>
+    </div>
+    <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  </main>
+  <footer class="wrap foot muted small">資料來源：<span id="source">台灣彩券官方網站</span>，更新於 <span id="updated">—</span>。重新下載：<code>python3 tools/fetch_power_lottery.py</code></footer>
+</body>
+</html>
