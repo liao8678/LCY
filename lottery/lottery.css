@@ -118,3 +118,8 @@ td.wrap, th.wrap { white-space: normal; text-align: left; min-width: 180px; colo
 tr.total td { font-weight: 700; border-top: 2px solid var(--line); }
 .scroll-hint { display: none; margin: 8px 0 0; }
 @media (max-width: 760px) { .scroll-hint { display: block; } }
+.app-tools { margin: 16px 0 0; }
+.app-tools p { margin: 6px 0 0; }
+#install-button { font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--series-1); background: var(--series-1); color: #fff; border-radius: 999px; padding: 8px 16px; min-height: 40px; cursor: pointer; }
+#install-button:focus-visible { outline: 3px solid var(--series-1); outline-offset: 2px; }
+.status.offline { margin-top: 12px; color: var(--notice-ink); background: var(--notice-bg); border-color: transparent; }

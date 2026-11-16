@@ -3,9 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2a78d6">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="威力彩分析">
   <title>威力彩歷史開獎分析</title>
   <link rel="stylesheet" href="./lottery.css">
   <script defer src="./lottery.js"></script>
+  <script defer src="./pwa.js"></script>
 </head>
 <body class="viz-root">
   <header class="top">
@@ -17,6 +24,9 @@
       <p class="muted">依台灣彩券官方歷史開獎號碼統計各號碼的出現次數、未開期數與組合分布。</p>
       <p class="notice"><strong>請注意：</strong>每期開獎都是獨立的隨機事件，過去出現多或少，不會改變下一期任何號碼的機率。頭獎機率固定為 1／22,085,448。本頁僅供統計參考，不構成投注建議；未滿 18 歲不得購買彩券。</p>
     </section>
+
+    <div class="app-tools"><button id="install-button" type="button" hidden>安裝威力彩分析</button><p id="install-help" class="muted small">可透過瀏覽器選單安裝；iPhone／iPad 請在 Safari 分享選單選「加入主畫面」。</p></div>
+    <p id="offline-note" class="status offline" role="status" hidden></p>
 
     <p id="status" class="status" role="status">正在載入開獎資料…</p>
 
