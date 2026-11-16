@@ -123,3 +123,10 @@ tr.total td { font-weight: 700; border-top: 2px solid var(--line); }
 #install-button { font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--series-1); background: var(--series-1); color: #fff; border-radius: 999px; padding: 8px 16px; min-height: 40px; cursor: pointer; }
 #install-button:focus-visible { outline: 3px solid var(--series-1); outline-offset: 2px; }
 .status.offline { margin-top: 12px; color: var(--notice-ink); background: var(--notice-bg); border-color: transparent; }
+.filters.inline { margin: 12px 0 4px; }
+.chart .band { fill: var(--grid); }
+.chart .dot { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+.chart .dot.active { fill: var(--series-1-hover); }
+.chart .row-label { fill: var(--text-primary); font-size: 13px; }
+#backtest-summary { margin-top: 12px; }
+.chart-title { margin: 14px 0 0; font-weight: 600; }

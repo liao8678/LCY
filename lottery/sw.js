@@ -3,7 +3,7 @@
 // 威力彩分析 PWA；範圍只限 lottery/，與根目錄的工地巡查 PWA 互不影響。
 // 更新網頁檔案時請遞增版本；data.json 採「網路優先、離線用快取」，不需改版本。
 const PREFIX = `power-lottery:${self.registration.scope}:`;
-const CACHE = `${PREFIX}v1`;
+const CACHE = `${PREFIX}v2`;
 const DATA_CACHE = `${PREFIX}data`;
 const scoped = (path) => new URL(path, self.registration.scope).href;
 const CORE = ['./', './index.html', './lottery.css', './lottery.js', './pwa.js', './manifest.webmanifest',
