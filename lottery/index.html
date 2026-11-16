@@ -60,20 +60,46 @@
         </section>
       </div>
 
-      <div class="two-col">
+      <section class="card">
+        <h2>每期奇數個數</h2>
+        <p class="muted small">第一區 6 個號碼中有幾個奇數；虛線為純隨機時的理論期數。</p>
+        <div class="chart" id="chart-odd"></div>
+        <details><summary>以表格檢視</summary><div class="table-wrap" id="table-odd"></div></details>
+      </section>
+
+      <section class="sum-section" aria-labelledby="sum-title">
+        <h2 id="sum-title" class="section-title">各期號碼總和分析</h2>
+        <p class="muted small">「總和」為每期第一區 6 個號碼相加（第二區另計），可能範圍 21–213。理論值依 38 選 6 所有組合精確計算。</p>
+
+        <div class="sum-tiles" id="sum-tiles"></div>
+
         <section class="card">
-          <h2>每期奇數個數</h2>
-          <p class="muted small">第一區 6 個號碼中有幾個奇數；虛線為純隨機時的理論期數。</p>
-          <div class="chart" id="chart-odd"></div>
-          <details><summary>以表格檢視</summary><div class="table-wrap" id="table-odd"></div></details>
-        </section>
-        <section class="card">
-          <h2>第一區號碼總和分布</h2>
-          <p class="muted small">6 個號碼加總，每 10 為一組。</p>
+          <h3 class="card-title">總和分布</h3>
+          <p class="muted small">每 5 為一組；長條為實際期數，虛線為純隨機時的理論期數。</p>
           <div class="chart" id="chart-sum"></div>
           <details><summary>以表格檢視</summary><div class="table-wrap" id="table-sum"></div></details>
         </section>
-      </div>
+
+        <div class="two-col">
+          <section class="card">
+            <h3 class="card-title">總和區間比較</h3>
+            <p class="muted small">以理論平均 117 ± 1 個標準差（約 25）劃分。</p>
+            <div class="table-wrap" id="sum-bands"></div>
+          </section>
+          <section class="card">
+            <h3 class="card-title">第一區＋第二區總和</h3>
+            <p class="muted small">7 個號碼全部相加，可能範圍 22–221。</p>
+            <div class="table-wrap" id="sum-all"></div>
+          </section>
+        </div>
+
+        <section class="card">
+          <h3 class="card-title">各期總和走勢</h3>
+          <div class="legend" id="trend-legend"></div>
+          <div class="chart" id="chart-trend" tabindex="0" aria-label="各期總和走勢圖，可用左右方向鍵逐期查看"></div>
+          <details><summary>以表格檢視（最近 100 期）</summary><div class="table-wrap" id="table-trend"></div></details>
+        </section>
+      </section>
 
       <section class="card">
         <h2>最近 20 期開獎</h2>
