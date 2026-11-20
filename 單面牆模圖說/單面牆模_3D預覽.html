@@ -32,7 +32,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 const W=2.44,H=6.41,HW=6.2,KICK=0.3,PLY=0.018,TBD=0.135,TBW=0.05;
 const TBZ=[0.285, 0.59, 0.895, 1.2, 1.505, 1.81, 2.115, 2.42, 2.725, 3.03, 3.335, 3.64, 3.945, 4.25, 4.555, 4.86, 5.165, 5.365, 5.67, 5.975, 6.28];
 const FRX=[0.37,2.07], ZF=PLY+TBD, FL=2.682, JACK=0.16, L1=1.5,L2=4.0,L3=0.75, FTOP=JACK+L1+L2+L3, YPL=JACK+L1+L2;
-const ANC=[0.37,2.07], CHY=[FTOP-0.06,2.6], CHR=1.0, TS=0.36, AX=0.216, YH=JACK+L1+0.3;
+const ANC=[0.17,0.57,1.87,2.27], CHY=[FTOP-0.06,2.6], CHR=1.0, TS=0.36, AX=0.216, YH=JACK+L1+0.3;
 const R2=Math.SQRT1_2;
 // diag centre z at height y
 const zDiag=y=>{const ay=YPL,az=ZF+0.15,by=JACK+0.06,bz=ZF+FL-0.06;return az+(ay-y)/(ay-by)*(bz-az);};
@@ -44,7 +44,7 @@ S.add(new THREE.HemisphereLight(0xffffff,0x8899aa,0.85));
 const dl=new THREE.DirectionalLight(0xffffff,0.75);dl.position.set(6,10,8);S.add(dl);
 const dl2=new THREE.DirectionalLight(0xffffff,0.3);dl2.position.set(-6,4,-6);S.add(dl2);
 const groups={};
-const LAYERS=[['wall','牆體（既有300＋澆置5900）',0xbfbfbf],['ply','六分板 t=18mm',0xd9b07a],['tb','Top Beam L=2.4m ×21',0xb8bcc2],['ch','槽鋼 75×40×t5 L=2.0m ×3',0xe0b000],['pipe','鋼管＋萬向活扣',0x7a7a7a],['frame','三角背撐架 ×2',0x8e9aa6],['plat','平台＋護欄',0xc9a46b],['anchor','壓梁L=2.2m＋預埋件',0xd04040],['jack','調整座',0x34406a]];
+const LAYERS=[['wall','牆體（既有300＋澆置5900）',0xbfbfbf],['ply','六分板 t=18mm',0xd9b07a],['tb','Top Beam L=2.4m ×21',0xb8bcc2],['ch','槽鋼 75×40×t5 L=2.0m ×3',0xb5463c],['pipe','鋼管＋萬向活扣',0x7a7a7a],['frame','三角背撐架 ×2',0x8e9aa6],['plat','平台＋護欄',0xc9a46b],['anchor','壓梁L=2.2m＋預埋件 ×4',0xd04040],['jack','調整座',0x34406a]];
 for(const [k] of LAYERS){groups[k]=new THREE.Group();S.add(groups[k]);}
 const mat={};function M(k,c,o){return mat[k+c]||(mat[k+c]=new THREE.MeshStandardMaterial({color:c,roughness:.65,metalness:k=='ply'||k=='wall'?0:.35,transparent:o<1,opacity:o??1}));}
 function box(g,c,x0,x1,y0,y1,z0,z1,o){const m=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0),M(g,c,o));m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);groups[g].add(m);
@@ -78,7 +78,7 @@ for(const x of FRX){
  // wheels
  box('jack',0x666666,x-0.03,x+0.03,JACK+0.08,JACK+0.2,z0+0.2,z0+0.32);box('jack',0x666666,x-0.03,x+0.03,JACK+0.06,JACK+0.17,zr-0.26,zr-0.15);
  // jacks
- for(const [z,dx] of [[z0+0.075,(x<W/2?0.17:-0.17)],[zr-0.08,0]]){bar('jack',col.jack,[x+dx,0.02,z],[x+dx,JACK,z],0.032,'cyl');box('jack',col.jack,x+dx-0.1,x+dx+0.1,0,0.025,z-0.1,z+0.1);if(dx)box('jack',col.jack,Math.min(x,x+dx)-0.02,Math.max(x,x+dx)+0.02,JACK-0.012,JACK,z-0.1,z+0.1);}
+ for(const [z,dx] of [[z0+0.075,0],[zr-0.08,0]]){bar('jack',col.jack,[x+dx,0.02,z],[x+dx,JACK,z],0.032,'cyl');box('jack',col.jack,x+dx-0.1,x+dx+0.1,0,0.025,z-0.1,z+0.1);if(dx)box('jack',col.jack,Math.min(x,x+dx)-0.02,Math.max(x,x+dx)+0.02,JACK-0.012,JACK,z-0.1,z+0.1);}
 }
 // platform + guardrail
 box('plat',col.plat,0,W,YPL,YPL+0.05,ZF+0.15,ZF+0.15+0.66);
@@ -111,13 +111,13 @@ const NO=[-dz_,-dy_].map(v=>-v);           // 外法線 [ny,nz]（往上、往�
 const cen=y=>{const t=(DA[0]-y)/(DA[0]-DB[0]);return [y,DA[1]+t*(DB[1]-DA[1])];};
 const outer=(y,off)=>{const c=cen(y);return [c[0]+NO[0]*(0.0625+off),c[1]+NO[1]*(0.0625+off)];};
 const phi=Math.atan2(-dz_,-dy_);           // 沿斜材方向之旋轉角
-// 槽鋼 75×40 L2000：前立柱兩道（背面）＋斜材外側一道
-for(const y of CHY)box('ch',col.ch,0.22,2.22,y-0.0375,y+0.0375,ZF+0.15,ZF+0.19);
-{const p=outer(CHR,0.02);const m=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.075,0.04),M('ch',col.ch,1));m.position.set(1.22,p[0],p[1]);m.rotation.x=phi;groups.ch.add(m);}
-// 鋼管Ø48.6＋萬向活扣：緊結於兩座背撐架斜材外側（F1@2.20 → F2@4.67）
-{const p1=outer(2.2,0.024),p2=outer(4.67,0.024);
- const a=[FRX[0],p1[0],p1[1]],b=[FRX[1],p2[0],p2[1]];bar('pipe',col.pipe,a,b,0.024,'cyl');
- for(const p of [a,b]){const m=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.09,0.03),M('pipe',0x333333,1));m.position.set(...p);m.rotation.x=phi;groups.pipe.add(m);}}
+// 槽鋼 75×40 L2000：前立柱頂一道＋斜材外側兩道（EL.1.00、2.60）
+box('ch',col.ch,0.22,2.22,CHY[0]-0.0375,CHY[0]+0.0375,ZF+0.15,ZF+0.19);
+for(const y of [1.0,2.6]){const p=outer(y,0.02);const m=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.075,0.04),M('ch',0xb5463c,1));m.position.set(1.22,p[0],p[1]);m.rotation.x=phi;groups.ch.add(m);}
+// 鋼管Ø48.6＋萬向活扣（斜材外側）：水平兩道 L=2.4m（EL.2.00、3.80）＋斜撐一支
+const clamp=p=>{const m=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.09,0.03),M('pipe',0xc9a227,1));m.position.set(...p);m.rotation.x=phi;groups.pipe.add(m);};
+for(const y of [2.0,3.8]){const p=outer(y,0.064);bar('pipe',col.pipe,[-0.08,p[0],p[1]],[W+0.08,p[0],p[1]],0.024,'cyl');for(const x of FRX)clamp([x,...outer(y,0.03)]);}
+{const p1=outer(2.2,0.024),p2=outer(4.67,0.024);const a=[FRX[0],p1[0],p1[1]],b=[FRX[1],p2[0],p2[1]];bar('pipe',col.pipe,a,b,0.024,'cyl');clamp(a);clamp(b);}
 // UI
 const lay=document.getElementById('layers');
 for(const [k,n,c] of LAYERS){const l=document.createElement('label');l.innerHTML=`<input type=checkbox checked> <span class=sw style="background:#${c.toString(16).padStart(6,'0')}"></span>${n}`;
