@@ -44,9 +44,9 @@ S.add(new THREE.HemisphereLight(0xffffff,0x8899aa,0.85));
 const dl=new THREE.DirectionalLight(0xffffff,0.75);dl.position.set(6,10,8);S.add(dl);
 const dl2=new THREE.DirectionalLight(0xffffff,0.3);dl2.position.set(-6,4,-6);S.add(dl2);
 const groups={};
-const LAYERS=[['wall','牆體（既有300＋澆置5900）',0xbfbfbf],['ply','六分板 t=18mm',0xd9b07a],['tb','Top Beam L=2.4m ×21',0xb8bcc2],['ch','槽鋼 75×40×t5 L=2.0m ×3',0xb5463c],['pipe','鋼管＋萬向活扣',0x7a7a7a],['frame','三角背撐架 ×2（鍍鋅銀灰）',0xd6dadf],['plat','平台＋護欄',0xc9a46b],['anchor','壓梁L=2.2m＋預埋件 ×4',0xd04040],['jack','調整座',0x34406a]];
+const LAYERS=[['wall','牆體（既有300＋澆置5900）',0xbfbfbf],['ply','六分板 t=18mm',0xd9b07a],['tb','Top Beam L=2.4m ×21（亮銀）',0xf1f3f6],['ch','槽鋼 75×40×t5 L=2.0m ×3',0xb5463c],['pipe','鋼管＋萬向活扣',0x7a7a7a],['frame','三角背撐架 ×2（鍍鋅銀灰）',0xd6dadf],['plat','平台＋護欄',0xc9a46b],['anchor','壓梁L=2.2m＋預埋件 ×4',0xd04040],['jack','調整座',0x34406a]];
 for(const [k] of LAYERS){groups[k]=new THREE.Group();S.add(groups[k]);}
-const mat={};function M(k,c,o){return mat[k+c]||(mat[k+c]=new THREE.MeshStandardMaterial({color:c,roughness:k=='frame'?.45:.65,metalness:k=='ply'||k=='wall'?0:(k=='frame'?.12:.35),emissive:k=='frame'?0x202326:0x000000,transparent:o<1,opacity:o??1}));}
+const mat={};function M(k,c,o){return mat[k+c]||(mat[k+c]=new THREE.MeshStandardMaterial({color:c,roughness:k=='frame'?.45:(k=='tb'?.25:.65),metalness:k=='ply'||k=='wall'?0:(k=='frame'?.12:(k=='tb'?.1:.35)),emissive:k=='frame'?0x202326:(k=='tb'?0x3a3d42:0x000000),transparent:o<1,opacity:o??1}));}
 function box(g,c,x0,x1,y0,y1,z0,z1,o){const m=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0),M(g,c,o));m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);groups[g].add(m);
  const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),new THREE.LineBasicMaterial({color:0x000000,transparent:true,opacity:.25}));e.position.copy(m.position);groups[g].add(e);return m;}
 function bar(g,c,a,b,r,shape){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),L=A.distanceTo(B);
