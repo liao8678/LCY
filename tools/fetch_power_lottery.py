@@ -1,12 +1,9 @@
 """下載台灣彩券官方威力彩歷史開獎號碼，輸出 lottery/data.json。
 
-用法：
-  python3 tools/fetch_power_lottery.py          # 增量更新：只下載最後一期所在月份起的資料並合併
-  python3 tools/fetch_power_lottery.py --full   # 從 2008 年 1 月起全部重新下載
+用法：python3 tools/fetch_power_lottery.py
 資料來源：api.taiwanlottery.com（台灣彩券官方網站使用的公開 API）。
 """
 import datetime
-import sys
 import json
 import time
 import urllib.request
@@ -41,14 +38,7 @@ def fetch(month):
 def main():
     today = datetime.date.today()
     draws = {}
-    start = (2008, 1)
-    if OUT.exists() and '--full' not in sys.argv:
-        for old in json.loads(OUT.read_text(encoding='utf-8'))['draws']:
-            draws[old['period']] = old
-        last = max(d['date'] for d in draws.values())
-        start = (int(last[:4]), int(last[5:7]))
-    before = len(draws)
-    for month in months(start, (today.year, today.month)):
+    for month in months((2008, 1), (today.year, today.month)):
         for row in fetch(month):
             numbers = row['drawNumberSize']
             first, second = sorted(numbers[:6]), numbers[6]
@@ -62,14 +52,11 @@ def main():
             }
         time.sleep(0.2)
     data = sorted(draws.values(), key=lambda d: (d['date'], d['period']))
-    if len(data) == before and OUT.exists() and '--full' not in sys.argv:
-        print(f'沒有新的開獎資料（最新 {data[-1]["date"]}）')
-        return
     OUT.write_text(json.dumps({
         'source': '台灣彩券官方網站 api.taiwanlottery.com',
         'updated': today.isoformat(), 'draws': data,
     }, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-    print(f'{len(data)} 期（新增 {len(data) - before} 期），{data[0]["date"]} ～ {data[-1]["date"]} → {OUT}')
+    print(f'{len(data)} 期，{data[0]["date"]} ～ {data[-1]["date"]} → {OUT}')
 
 
 if __name__ == '__main__':

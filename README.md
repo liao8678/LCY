@@ -29,6 +29,4 @@ GitHub Pages 請在 Settings → Pages 選擇 Deploy from a branch、`main`、`/
 
 威力彩分析也是獨立的 PWA（名稱「威力彩分析」，範圍限 `lottery/`，與工地巡查 PWA 分開安裝、互不影響）：開啟 https://liao8678.github.io/LCY/lottery/ 後，可按頁面上的「安裝威力彩分析」或瀏覽器選單安裝；iPhone／iPad 請用 Safari 分享選單 →「加入主畫面」。第一次需連線開啟，之後可離線查看；`data.json` 採網路優先，離線時顯示上次下載的資料並提示更新日期。更新網頁檔案時請遞增 `lottery/sw.js` 的版本。自動驗證：`python3 tests/test_lottery_pwa.py`。
 
-另有「下一期 8 + 2 推薦號碼」區塊：依上述五種回測方法各列出第一區 8 個、第二區 2 個號碼與 8 + 2 回測中獎率，開獎資料更新後自動重算（僅為統計示範，任何號碼機率相同）。
-
-開獎資料（號碼、銷售金額、各獎項中獎注數）存於 `lottery/data.json`，來源為台灣彩券官方網站。GitHub Actions 工作流程 `.github/workflows/update-lottery.yml` 會在每週一、四開獎後（台灣時間 22:23，隔天 09:23 補抓）自動下載新開獎並提交到 `main`，GitHub Pages 隨之更新；也可在 Actions 頁面手動執行。手動更新：`python3 tools/fetch_power_lottery.py`（增量更新；加 `--full` 全部重新下載，需能連線 api.taiwanlottery.com）。
+開獎資料（號碼、銷售金額、各獎項中獎注數）存於 `lottery/data.json`，來源為台灣彩券官方網站。更新資料：`python3 tools/fetch_power_lottery.py`（需能連線 api.taiwanlottery.com）。
