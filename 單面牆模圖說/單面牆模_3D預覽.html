@@ -104,17 +104,17 @@ for(const x of ANC){
   const w=P(0.1575,0);const mw=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.015,0.12),M('anchor',0x888888,1));mw.position.set(x,w[1],w[0]);mw.rotation.x=-Math.PI/4;groups.anchor.add(mw);
   const nt=P(0.195,0);const mn=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.06,6),M('anchor',0x444444,1));mn.position.set(x,nt[1],nt[0]);mn.rotation.x=Math.PI/4;groups.anchor.add(mn);
 }
-// 斜材外側幾何：斜材中心線 A(y=YPL,z=ZF+0.15) → B(y=JACK+0.06,z=ZF+FL-0.06)，斷面厚0.125
+// 斜材內側幾何：斜材中心線 A(y=YPL,z=ZF+0.15) → B(y=JACK+0.06,z=ZF+FL-0.06)，斷面厚0.125
 const DA=[YPL,ZF+0.15], DB=[JACK+0.06,ZF+FL-0.06];
 const dL=Math.hypot(DB[0]-DA[0],DB[1]-DA[1]), dy_=(DB[0]-DA[0])/dL, dz_=(DB[1]-DA[1])/dL;
 const NO=[-dz_,-dy_].map(v=>-v);           // 外法線 [ny,nz]（往上、往後）
 const cen=y=>{const t=(DA[0]-y)/(DA[0]-DB[0]);return [y,DA[1]+t*(DB[1]-DA[1])];};
-const outer=(y,off)=>{const c=cen(y);return [c[0]+NO[0]*(0.0625+off),c[1]+NO[1]*(0.0625+off)];};
+const outer=(y,off)=>{const c=cen(y);return [c[0]-NO[0]*(0.0625+off),c[1]-NO[1]*(0.0625+off)];};  // 改為斜材內側（面向牆面）
 const phi=Math.atan2(-dz_,-dy_);           // 沿斜材方向之旋轉角
-// 槽鋼 75×40 L2000：前立柱頂一道＋斜材外側兩道（EL.1.00、2.60）
+// 槽鋼 75×40 L2000：前立柱頂一道＋斜材內側兩道（EL.1.00、2.60）
 box('ch',col.ch,0.22,2.22,CHY[0]-0.0375,CHY[0]+0.0375,ZF+0.15,ZF+0.19);
 for(const y of [1.0,2.6]){const p=outer(y,0.02);const m=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.075,0.04),M('ch',0xb5463c,1));m.position.set(1.22,p[0],p[1]);m.rotation.x=phi;groups.ch.add(m);}
-// 鋼管Ø48.6＋萬向活扣（斜材外側）：水平兩道 L=2.4m（EL.2.00、3.80）＋斜撐一支
+// 鋼管Ø48.6＋萬向活扣（斜材內側）：水平兩道 L=2.4m（EL.2.00、3.80）＋斜撐一支
 const clamp=p=>{const m=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.09,0.03),M('pipe',0xc9a227,1));m.position.set(...p);m.rotation.x=phi;groups.pipe.add(m);};
 for(const y of [2.0,3.8]){const p=outer(y,0.064);bar('pipe',col.pipe,[-0.08,p[0],p[1]],[W+0.08,p[0],p[1]],0.024,'cyl');for(const x of FRX)clamp([x,...outer(y,0.03)]);}
 {const p1=outer(2.2,0.024),p2=outer(4.67,0.024);const a=[FRX[0],p1[0],p1[1]],b=[FRX[1],p2[0],p2[1]];bar('pipe',col.pipe,a,b,0.024,'cyl');clamp(a);clamp(b);}
